@@ -52,9 +52,7 @@ pub(crate) async fn icm_profil_anwenden(
 /// Fallback: versucht qdbus-qt6, dann qdbus.
 pub(crate) async fn qdbus_ausfuehren(args: Vec<String>) -> Result<(), String> {
     let result = tokio::task::spawn_blocking(move || {
-        let status = std::process::Command::new("qdbus-qt6")
-            .args(&args)
-            .status();
+        let status = std::process::Command::new("qdbus-qt6").args(&args).status();
         match status {
             Ok(s) => Ok(("qdbus-qt6", s)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {

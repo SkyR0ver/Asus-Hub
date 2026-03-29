@@ -3,13 +3,11 @@ use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
 
-use crate::services::commands::pkexec_shell;
+use crate::services::commands::run_command_blocking;
+use crate::services::config::AppConfig;
 
 pub struct FnKeyModel {
     gesperrt: bool,
-    unterstuetzt: bool,
-    check_gesperrt: gtk::CheckButton,
-    check_normal: gtk::CheckButton,
     zeile_hinweis: adw::ActionRow,
     zeile_gesperrt: adw::ActionRow,
     zeile_normal: adw::ActionRow,
@@ -22,13 +20,9 @@ pub enum FnKeyMsg {
 
 #[derive(Debug)]
 pub enum FnKeyCommandOutput {
-    InitWert { gesperrt: bool, unterstuetzt: bool },
     Gesetzt(bool),
     Fehler(String),
 }
-
-const MODPROBE_PFAD: &str = "/etc/modprobe.d/asus_wmi.conf";
-const SYSFS_PFAD: &str = "/sys/module/asus_wmi/parameters/fnlock_default";
 
 #[relm4::component(pub)]
 impl Component for FnKeyModel {
@@ -56,7 +50,13 @@ impl Component for FnKeyModel {
         let check_normal = gtk::CheckButton::new();
 
         check_normal.set_group(Some(&check_gesperrt));
-        check_normal.set_active(true);
+
+        let gesperrt = AppConfig::load().input_fn_key_gesperrt;
+        if gesperrt {
+            check_gesperrt.set_active(true);
+        } else {
+            check_normal.set_active(true);
+        }
 
         {
             let sender = sender.clone();
@@ -77,7 +77,9 @@ impl Component for FnKeyModel {
 
         let zeile_hinweis = adw::ActionRow::new();
         zeile_hinweis.set_title("Hinweis");
-        zeile_hinweis.set_subtitle("Wird geprüft …");
+        zeile_hinweis.set_subtitle(
+            "Hinweis: Änderungen am Bootloader werden erst nach einem Systemneustart wirksam.",
+        );
         zeile_hinweis.set_selectable(false);
 
         let zeile_gesperrt = adw::ActionRow::new();
@@ -95,38 +97,13 @@ impl Component for FnKeyModel {
         zeile_normal.set_activatable_widget(Some(&check_normal));
 
         let model = FnKeyModel {
-            gesperrt: false,
-            unterstuetzt: true,
-            check_gesperrt,
-            check_normal,
+            gesperrt,
             zeile_hinweis,
             zeile_gesperrt,
             zeile_normal,
         };
 
         let widgets = view_output!();
-
-        sender.command(|out, shutdown| {
-            shutdown
-                .register(async move {
-                    // Prüfen ob sysfs-Parameter beschreibbar ist (Live-Änderung möglich)
-                    let unterstuetzt = std::fs::OpenOptions::new()
-                        .write(true)
-                        .open(SYSFS_PFAD)
-                        .is_ok();
-
-                    let gesperrt = match tokio::fs::read_to_string(MODPROBE_PFAD).await {
-                        Ok(inhalt) => inhalt.contains("fnlock_default=1"),
-                        Err(_) => false,
-                    };
-
-                    out.emit(FnKeyCommandOutput::InitWert {
-                        gesperrt,
-                        unterstuetzt,
-                    });
-                })
-                .drop_on_shutdown()
-        });
 
         ComponentParts { model, widgets }
     }
@@ -139,18 +116,28 @@ impl Component for FnKeyModel {
                 }
                 self.gesperrt = gesperrt;
 
-                let wert = if gesperrt { 1 } else { 0 };
+                let wert = if gesperrt { "0" } else { "1" };
+                let args_str = format!("asus_wmi.fnlock_default={wert}");
+
                 sender.command(move |out, shutdown| {
                     shutdown
                         .register(async move {
-                            // Live-Änderung versuchen (Fehler ignorieren),
-                            // dann Modprobe-Datei für Persistenz nach Neustart.
-                            let cmd = format!(
-                                "echo {wert} > {SYSFS_PFAD} 2>/dev/null; \
-                                 echo 'options asus_wmi fnlock_default={wert}' > {MODPROBE_PFAD}"
-                            );
-                            match pkexec_shell(&cmd).await {
-                                Ok(()) => out.emit(FnKeyCommandOutput::Gesetzt(gesperrt)),
+                            let result = run_command_blocking(
+                                "pkexec",
+                                &[
+                                    "grubby",
+                                    "--update-kernel=ALL",
+                                    "--remove-args=asus_wmi.fnlock_default",
+                                    &format!("--args={args_str}"),
+                                ],
+                            )
+                            .await;
+
+                            match result {
+                                Ok(()) => {
+                                    println!("Boot-Parameter erfolgreich aktualisiert.");
+                                    out.emit(FnKeyCommandOutput::Gesetzt(gesperrt));
+                                }
                                 Err(e) => out.emit(FnKeyCommandOutput::Fehler(e)),
                             }
                         })
@@ -167,34 +154,8 @@ impl Component for FnKeyModel {
         _root: &Self::Root,
     ) {
         match msg {
-            FnKeyCommandOutput::InitWert {
-                gesperrt,
-                unterstuetzt,
-            } => {
-                self.gesperrt = gesperrt;
-                self.unterstuetzt = unterstuetzt;
-
-                if gesperrt {
-                    self.check_gesperrt.set_active(true);
-                } else {
-                    self.check_normal.set_active(true);
-                }
-
-                if unterstuetzt {
-                    self.zeile_hinweis
-                        .set_subtitle("Änderungen werden erst nach einem Systemneustart wirksam.");
-                } else {
-                    self.check_gesperrt.set_sensitive(false);
-                    self.check_normal.set_sensitive(false);
-                    self.zeile_gesperrt.set_sensitive(false);
-                    self.zeile_normal.set_sensitive(false);
-                    self.zeile_hinweis.set_subtitle(
-                        "Diese Hardware unterstützt keine Software-Steuerung der Fn-Taste. \
-                         Verwende Fn+Esc (physischer Toggle, falls vorhanden) oder installiere keyd.",
-                    );
-                }
-            }
             FnKeyCommandOutput::Gesetzt(gesperrt) => {
+                AppConfig::update(|c| c.input_fn_key_gesperrt = gesperrt);
                 self.zeile_hinweis.set_subtitle(&format!(
                     "Fn-Taste {} gespeichert – wirksam nach Systemneustart.",
                     if gesperrt { "gesperrt" } else { "normal" }

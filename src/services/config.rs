@@ -11,6 +11,7 @@ pub struct AppConfig {
     pub oled_care_transparenz: bool,
     pub fan_tiefschlaf_aktiv: bool,
     pub input_gesten_aktiv: bool,
+    pub input_fn_key_gesperrt: bool,
 }
 
 impl AppConfig {
