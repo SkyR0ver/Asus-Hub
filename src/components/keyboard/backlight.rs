@@ -5,7 +5,6 @@ use relm4::adw::prelude::*;
 use relm4::prelude::*;
 use tokio::sync::watch;
 
-use crate::services::commands::pkexec_shell;
 use crate::services::config::AppConfig;
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -423,6 +422,7 @@ pub struct RuhezustandModel {
     check_nur_akku: gtk::CheckButton,
     dropdown_akku_netz: gtk::DropDown,
     dropdown_nur_akku: gtk::DropDown,
+    swayidle_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 #[derive(Debug)]
@@ -433,6 +433,7 @@ pub enum RuhezustandMsg {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum RuhezustandOutput {
     Fehler(String),
 }
@@ -533,16 +534,18 @@ impl Component for RuhezustandModel {
             });
         }
 
-        let model = RuhezustandModel {
+        let mut model = RuhezustandModel {
             timeout_modus: modus,
             check_nichts,
             check_akku_netz,
             check_nur_akku,
             dropdown_akku_netz,
             dropdown_nur_akku,
+            swayidle_task: None,
         };
 
         let widgets = view_output!();
+        model.timeout_schreiben(modus, sender.clone());
         ComponentParts { model, widgets }
     }
 
@@ -581,34 +584,84 @@ impl Component for RuhezustandModel {
 }
 
 impl RuhezustandModel {
-    fn timeout_schreiben(&self, modus: TimeoutModus, sender: ComponentSender<RuhezustandModel>) {
+    fn timeout_schreiben(
+        &mut self,
+        modus: TimeoutModus,
+        _sender: ComponentSender<RuhezustandModel>,
+    ) {
+        if let Some(task) = self.swayidle_task.take() {
+            task.abort();
+        }
+
+        if modus == TimeoutModus::Nichts {
+            return;
+        }
+
         let sekunden = match modus {
-            TimeoutModus::Nichts => 0u32,
+            TimeoutModus::Nichts => unreachable!(),
             TimeoutModus::AkkuUndNetz => {
                 let idx = self.dropdown_akku_netz.selected() as usize;
                 *TIMEOUT_SEKUNDEN.get(idx).unwrap_or(&60)
             }
             TimeoutModus::NurAkku => {
-                eprintln!(
-                    "Warnung: 'Nur im Akkubetrieb' benötigt einen AC-Power-Watcher. \
-                     Timeout wird aktuell unabhängig vom Netzteil gesetzt."
-                );
                 let idx = self.dropdown_nur_akku.selected() as usize;
                 *TIMEOUT_SEKUNDEN.get(idx).unwrap_or(&60)
             }
         };
 
-        sender.command(move |out, shutdown| {
-            shutdown
-                .register(async move {
-                    let cmd = format!(
-                        "echo {sekunden} > /sys/class/leds/asus::kbd_backlight/stop_timeout"
-                    );
-                    if let Err(e) = pkexec_shell(&cmd).await {
-                        out.emit(RuhezustandOutput::Fehler(e));
-                    }
-                })
-                .drop_on_shutdown()
+        let timeout_cmd = match modus {
+            TimeoutModus::NurAkku => {
+                "if [ \"$(cat /sys/class/power_supply/*/online | head -n1)\" = \"0\" ]; \
+                 then busctl call --system org.freedesktop.UPower \
+                 /org/freedesktop/UPower/KbdBacklight \
+                 org.freedesktop.UPower.KbdBacklight SetBrightness i 0; fi"
+                    .to_string()
+            }
+            _ => "busctl call --system org.freedesktop.UPower \
+                  /org/freedesktop/UPower/KbdBacklight \
+                  org.freedesktop.UPower.KbdBacklight SetBrightness i 0"
+                .to_string(),
+        };
+
+        let resume_cmd = match modus {
+            TimeoutModus::NurAkku => {
+                "if [ \"$(cat /sys/class/power_supply/*/online | head -n1)\" = \"0\" ]; \
+                 then busctl call --system org.freedesktop.UPower \
+                 /org/freedesktop/UPower/KbdBacklight \
+                 org.freedesktop.UPower.KbdBacklight SetBrightness i 3; fi"
+                    .to_string()
+            }
+            _ => "busctl call --system org.freedesktop.UPower \
+                  /org/freedesktop/UPower/KbdBacklight \
+                  org.freedesktop.UPower.KbdBacklight SetBrightness i 3"
+                .to_string(),
+        };
+
+        let sekunden_str = sekunden.to_string();
+
+        let handle = tokio::spawn(async move {
+            let mut child = match tokio::process::Command::new("swayidle")
+                .args([
+                    "-w",
+                    "timeout",
+                    &sekunden_str,
+                    &timeout_cmd,
+                    "resume",
+                    &resume_cmd,
+                ])
+                .spawn()
+            {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("swayidle starten fehlgeschlagen: {e}");
+                    return;
+                }
+            };
+            if let Err(e) = child.wait().await {
+                eprintln!("swayidle warten fehlgeschlagen: {e}");
+            }
         });
+
+        self.swayidle_task = Some(handle);
     }
 }
