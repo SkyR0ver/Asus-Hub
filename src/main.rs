@@ -9,6 +9,8 @@ use components::display::ZielmodusModel;
 use components::fan::FanModel;
 use components::input::FnKeyModel;
 use components::input::GesturenModel;
+use components::keyboard::AutoBeleuchtungModel;
+use components::keyboard::RuhezustandModel;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
@@ -21,6 +23,8 @@ struct AppModel {
     zielmodus: Controller<ZielmodusModel>,
     fn_key: Controller<FnKeyModel>,
     gesten: Controller<GesturenModel>,
+    auto_beleuchtung: Controller<AutoBeleuchtungModel>,
+    ruhezustand: Controller<RuhezustandModel>,
 }
 
 #[relm4::component]
@@ -54,6 +58,10 @@ impl SimpleComponent for AppModel {
                     add = fn_key_widget -> adw::PreferencesGroup {},
                     #[local_ref]
                     add = gesten_widget -> adw::PreferencesGroup {},
+                    #[local_ref]
+                    add = auto_beleuchtung_widget -> adw::PreferencesGroup {},
+                    #[local_ref]
+                    add = ruhezustand_widget -> adw::PreferencesGroup {},
                 },
             }
         }
@@ -71,6 +79,8 @@ impl SimpleComponent for AppModel {
         let zielmodus = ZielmodusModel::builder().launch(()).detach();
         let fn_key = FnKeyModel::builder().launch(()).detach();
         let gesten = GesturenModel::builder().launch(()).detach();
+        let auto_beleuchtung = AutoBeleuchtungModel::builder().launch(()).detach();
+        let ruhezustand = RuhezustandModel::builder().launch(()).detach();
 
         let model = AppModel {
             battery,
@@ -80,6 +90,8 @@ impl SimpleComponent for AppModel {
             zielmodus,
             fn_key,
             gesten,
+            auto_beleuchtung,
+            ruhezustand,
         };
         let battery_widget = model.battery.widget();
         let fan_widget = model.fan.widget();
@@ -88,6 +100,8 @@ impl SimpleComponent for AppModel {
         let zielmodus_widget = model.zielmodus.widget();
         let fn_key_widget = model.fn_key.widget();
         let gesten_widget = model.gesten.widget();
+        let auto_beleuchtung_widget = model.auto_beleuchtung.widget();
+        let ruhezustand_widget = model.ruhezustand.widget();
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }

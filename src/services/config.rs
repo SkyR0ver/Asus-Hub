@@ -2,7 +2,14 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+fn default_aufhellung_schwelle() -> f64 {
+    12.0
+}
+fn default_abdunklung_schwelle() -> f64 {
+    35.0
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AppConfig {
     pub farbskala_index: u32,
     pub zielmodus_aktiv: bool,
@@ -13,6 +20,43 @@ pub struct AppConfig {
     pub fan_profil: u32,
     pub input_gesten_aktiv: bool,
     pub input_fn_key_gesperrt: bool,
+    #[serde(default)]
+    pub kbd_aufhellung_aktiv: bool,
+    #[serde(default)]
+    pub kbd_abdunklung_aktiv: bool,
+    #[serde(default)]
+    pub kbd_timeout_modus: u32,
+    #[serde(default)]
+    pub kbd_timeout_akku_netz_index: u32,
+    #[serde(default)]
+    pub kbd_timeout_nur_akku_index: u32,
+    #[serde(default = "default_aufhellung_schwelle")]
+    pub kbd_aufhellung_schwelle: f64,
+    #[serde(default = "default_abdunklung_schwelle")]
+    pub kbd_abdunklung_schwelle: f64,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            farbskala_index: 0,
+            zielmodus_aktiv: false,
+            oled_care_pixel_refresh: false,
+            oled_care_panel_autohide: false,
+            oled_care_transparenz: false,
+            fan_tiefschlaf_aktiv: false,
+            fan_profil: 0,
+            input_gesten_aktiv: false,
+            input_fn_key_gesperrt: false,
+            kbd_aufhellung_aktiv: false,
+            kbd_abdunklung_aktiv: false,
+            kbd_timeout_modus: 0,
+            kbd_timeout_akku_netz_index: 0,
+            kbd_timeout_nur_akku_index: 0,
+            kbd_aufhellung_schwelle: 12.0,
+            kbd_abdunklung_schwelle: 35.0,
+        }
+    }
 }
 
 impl AppConfig {

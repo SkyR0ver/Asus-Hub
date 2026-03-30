@@ -785,6 +785,7 @@ name = "myasus-linux"
 version = "0.1.0"
 dependencies = [
  "directories",
+ "futures-util",
  "gtk4",
  "libadwaita",
  "relm4",
