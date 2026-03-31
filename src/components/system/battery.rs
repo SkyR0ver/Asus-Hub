@@ -2,11 +2,14 @@ use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
 
+use crate::services::commands::pkexec_shell;
+use crate::services::config::AppConfig;
 use crate::services::dbus;
 
 pub struct BatteryModel {
     wartungsmodus_aktiv: bool,
     volle_aufladung_aktiv: bool,
+    tiefschlaf_aktiv: bool,
     timer_abbrechen: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
@@ -14,6 +17,7 @@ pub struct BatteryModel {
 pub enum BatteryMsg {
     WartungsmodusUmschalten(bool),
     VolleAufladungUmschalten(bool),
+    TiefschlafhilfeUmschalten(bool),
 }
 
 #[derive(Debug)]
@@ -22,6 +26,8 @@ pub enum BatteryCommandOutput {
     Fehler(String),
     TimerAbgelaufen,
     InitWert(u8),
+    InitTiefschlaf(bool),
+    TiefschlafGesetzt(bool),
 }
 
 #[relm4::component(pub)]
@@ -61,6 +67,18 @@ impl Component for BatteryModel {
                     sender.input(BatteryMsg::VolleAufladungUmschalten(switch.is_active()));
                 },
             },
+
+            add = &adw::SwitchRow {
+                set_title: "Tiefschlafhilfe",
+                set_subtitle: "Um den Akku zu schonen, versetzt die Tiefschlafhilfe das System in den Tiefschlafmodus, wenn es in einem festgelegten Zeitraum zu viel Strom verbraucht hat.",
+
+                #[watch]
+                set_active: model.tiefschlaf_aktiv,
+
+                connect_active_notify[sender] => move |switch| {
+                    sender.input(BatteryMsg::TiefschlafhilfeUmschalten(switch.is_active()));
+                },
+            },
         }
     }
 
@@ -72,6 +90,7 @@ impl Component for BatteryModel {
         let model = BatteryModel {
             wartungsmodus_aktiv: false,
             volle_aufladung_aktiv: false,
+            tiefschlaf_aktiv: false,
             timer_abbrechen: None,
         };
         let widgets = view_output!();
@@ -82,6 +101,24 @@ impl Component for BatteryModel {
                     match dbus::get_charge_limit().await {
                         Ok(val) => out.emit(BatteryCommandOutput::InitWert(val)),
                         Err(e) => out.emit(BatteryCommandOutput::Fehler(e)),
+                    }
+                })
+                .drop_on_shutdown()
+        });
+
+        sender.command(|out, shutdown| {
+            shutdown
+                .register(async move {
+                    match tokio::fs::read_to_string("/sys/power/mem_sleep").await {
+                        Ok(content) => {
+                            let aktiv = content.contains("[deep]");
+                            out.emit(BatteryCommandOutput::InitTiefschlaf(aktiv));
+                        }
+                        Err(e) => {
+                            out.emit(BatteryCommandOutput::Fehler(format!(
+                                "mem_sleep lesen fehlgeschlagen: {e}"
+                            )));
+                        }
                     }
                 })
                 .drop_on_shutdown()
@@ -119,6 +156,25 @@ impl Component for BatteryModel {
                             .drop_on_shutdown()
                     });
                 }
+            }
+            BatteryMsg::TiefschlafhilfeUmschalten(aktiv) => {
+                if aktiv == self.tiefschlaf_aktiv {
+                    return;
+                }
+                self.tiefschlaf_aktiv = aktiv;
+                AppConfig::update(|c| c.battery_tiefschlaf_aktiv = aktiv);
+                let wert = if aktiv { "deep" } else { "s2idle" };
+                sender.command(move |out, shutdown| {
+                    shutdown
+                        .register(async move {
+                            let cmd = format!("echo {wert} > /sys/power/mem_sleep");
+                            match pkexec_shell(&cmd).await {
+                                Ok(()) => out.emit(BatteryCommandOutput::TiefschlafGesetzt(aktiv)),
+                                Err(e) => out.emit(BatteryCommandOutput::Fehler(e)),
+                            }
+                        })
+                        .drop_on_shutdown()
+                });
             }
             BatteryMsg::VolleAufladungUmschalten(aktiv) => {
                 if aktiv == self.volle_aufladung_aktiv {
@@ -171,6 +227,15 @@ impl Component for BatteryModel {
             BatteryCommandOutput::InitWert(val) => {
                 self.wartungsmodus_aktiv = val <= 80;
                 self.volle_aufladung_aktiv = false;
+            }
+            BatteryCommandOutput::InitTiefschlaf(aktiv) => {
+                self.tiefschlaf_aktiv = aktiv;
+            }
+            BatteryCommandOutput::TiefschlafGesetzt(aktiv) => {
+                eprintln!(
+                    "Tiefschlafhilfe auf {} gesetzt",
+                    if aktiv { "deep" } else { "s2idle" }
+                );
             }
             BatteryCommandOutput::LadelimitGesetzt(val) => {
                 eprintln!("Ladelimit auf {val}% gesetzt");

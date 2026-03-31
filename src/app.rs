@@ -159,12 +159,17 @@ impl SimpleComponent for AppModel {
         my_stack.add_titled_with_icon(&anzeige_page, None, "Anzeige", "monitor-symbolic");
 
         let tastatur_page = adw::PreferencesPage::new();
-        tastatur_page.add(touchpad_widget);
         tastatur_page.add(auto_beleuchtung_widget);
         tastatur_page.add(ruhezustand_widget);
         tastatur_page.add(fn_key_widget);
+        tastatur_page.add(touchpad_widget);
         tastatur_page.add(gesten_widget);
-        my_stack.add_titled_with_icon(&tastatur_page, None, "Tastatur", "input-keyboard-symbolic");
+        my_stack.add_titled_with_icon(
+            &tastatur_page,
+            None,
+            "Maus & Tastatur",
+            "input-keyboard-symbolic",
+        );
 
         let system_page = adw::PreferencesPage::new();
         system_page.add(battery_widget);

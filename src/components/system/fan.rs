@@ -3,14 +3,12 @@ use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
 
-use crate::services::commands::pkexec_shell;
 use crate::services::config::AppConfig;
 use crate::services::dbus;
 use crate::services::dbus::FanProfile;
 
 pub struct FanModel {
     aktuelles_profil: FanProfile,
-    tiefschlaf_aktiv: bool,
     check_leistung: gtk::CheckButton,
     check_standard: gtk::CheckButton,
     check_fluester: gtk::CheckButton,
@@ -19,14 +17,11 @@ pub struct FanModel {
 #[derive(Debug)]
 pub enum FanMsg {
     ProfilWechseln(FanProfile),
-    TiefschlafhilfeUmschalten(bool),
 }
 
 #[derive(Debug)]
 pub enum FanCommandOutput {
     ProfilGesetzt(FanProfile),
-    InitTiefschlaf(bool),
-    TiefschlafGesetzt(bool),
     Fehler(String),
 }
 
@@ -60,18 +55,6 @@ impl Component for FanModel {
                 set_subtitle: "Minimiert dynamisch die Lüftergeschwindigkeit für eine leise Umgebung.",
                 add_prefix = &model.check_fluester.clone(),
                 set_activatable_widget: Some(&model.check_fluester),
-            },
-
-            add = &adw::SwitchRow {
-                set_title: "Tiefschlafhilfe",
-                set_subtitle: "Um den Akku zu schonen, versetzt die Tiefschlafhilfe das System in den Tiefschlafmodus, wenn es in einem festgelegten Zeitraum zu viel Strom verbraucht hat.",
-
-                #[watch]
-                set_active: model.tiefschlaf_aktiv,
-
-                connect_active_notify[sender] => move |switch| {
-                    sender.input(FanMsg::TiefschlafhilfeUmschalten(switch.is_active()));
-                },
             },
         }
     }
@@ -111,7 +94,6 @@ impl Component for FanModel {
 
         let model = FanModel {
             aktuelles_profil: gespeichertes_profil,
-            tiefschlaf_aktiv: false,
             check_leistung,
             check_standard,
             check_fluester,
@@ -131,24 +113,6 @@ impl Component for FanModel {
                             Err(e) => out.emit(FanCommandOutput::Fehler(e)),
                         },
                         Err(e) => out.emit(FanCommandOutput::Fehler(e)),
-                    }
-                })
-                .drop_on_shutdown()
-        });
-
-        sender.command(|out, shutdown| {
-            shutdown
-                .register(async move {
-                    match tokio::fs::read_to_string("/sys/power/mem_sleep").await {
-                        Ok(content) => {
-                            let aktiv = content.contains("[deep]");
-                            out.emit(FanCommandOutput::InitTiefschlaf(aktiv));
-                        }
-                        Err(e) => {
-                            out.emit(FanCommandOutput::Fehler(format!(
-                                "mem_sleep lesen fehlgeschlagen: {e}"
-                            )));
-                        }
                     }
                 })
                 .drop_on_shutdown()
@@ -177,27 +141,6 @@ impl Component for FanModel {
                         .drop_on_shutdown()
                 });
             }
-            FanMsg::TiefschlafhilfeUmschalten(aktiv) => {
-                if aktiv == self.tiefschlaf_aktiv {
-                    return;
-                }
-                self.tiefschlaf_aktiv = aktiv;
-
-                AppConfig::update(|c| c.fan_tiefschlaf_aktiv = aktiv);
-
-                let wert = if aktiv { "deep" } else { "s2idle" };
-                sender.command(move |out, shutdown| {
-                    shutdown
-                        .register(async move {
-                            let cmd = format!("echo {wert} > /sys/power/mem_sleep");
-                            match pkexec_shell(&cmd).await {
-                                Ok(()) => out.emit(FanCommandOutput::TiefschlafGesetzt(aktiv)),
-                                Err(e) => out.emit(FanCommandOutput::Fehler(e)),
-                            }
-                        })
-                        .drop_on_shutdown()
-                });
-            }
         }
     }
 
@@ -208,17 +151,8 @@ impl Component for FanModel {
         _root: &Self::Root,
     ) {
         match msg {
-            FanCommandOutput::InitTiefschlaf(aktiv) => {
-                self.tiefschlaf_aktiv = aktiv;
-            }
             FanCommandOutput::ProfilGesetzt(profile) => {
                 eprintln!("Lüfterprofil auf {:?} gesetzt", profile);
-            }
-            FanCommandOutput::TiefschlafGesetzt(aktiv) => {
-                eprintln!(
-                    "Tiefschlafhilfe auf {} gesetzt",
-                    if aktiv { "deep" } else { "s2idle" }
-                );
             }
             FanCommandOutput::Fehler(e) => {
                 let _ = sender.output(e);
