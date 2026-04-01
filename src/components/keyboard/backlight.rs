@@ -3,6 +3,7 @@ use gtk4 as gtk;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 use tokio::sync::watch;
 
 use crate::services::commands::run_command_blocking;
@@ -62,12 +63,12 @@ impl Component for AutoBeleuchtungModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Automatische Tastaturhintergrundbeleuchtung",
-            set_description: Some("Passt die Tastaturhintergrundbeleuchtung automatisch an das Umgebungslicht an. Erfordert iio-sensor-proxy."),
+            set_title: &t!("backlight_group_title"),
+            set_description: Some(&t!("backlight_group_desc")),
 
             add = &adw::ActionRow {
-                set_title: "Aktueller Lichtwert",
-                set_subtitle: "Live-Messwert des Umgebungslichtsensors",
+                set_title: &t!("backlight_light_level_title"),
+                set_subtitle: &t!("backlight_light_level_subtitle"),
 
                 #[watch]
                 set_visible: model.aufhellung_aktiv || model.abdunklung_aktiv,
@@ -76,7 +77,7 @@ impl Component for AutoBeleuchtungModel {
                     #[watch]
                     set_label: &match model.aktuelle_lux {
                         Some(lux) => format!("{lux:.1} lx"),
-                        None => "— lx".to_string(),
+                        None => t!("backlight_no_lux").to_string(),
                     },
                     add_css_class: "numeric",
                     set_valign: gtk::Align::Center,
@@ -84,8 +85,8 @@ impl Component for AutoBeleuchtungModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "Automatische Aufhellung",
-                set_subtitle: "Schaltet die Hintergrundbeleuchtung automatisch ein, wenn es dunkel ist.",
+                set_title: &t!("backlight_auto_on_title"),
+                set_subtitle: &t!("backlight_auto_on_subtitle"),
 
                 #[watch]
                 set_active: model.aufhellung_aktiv,
@@ -96,8 +97,8 @@ impl Component for AutoBeleuchtungModel {
             },
 
             add = &adw::ActionRow {
-                set_title: "Schwellenwert für Aufhellung (Lux)",
-                set_subtitle: "Lichtlevel, unter dem die Tastatur leuchtet",
+                set_title: &t!("backlight_threshold_on_title"),
+                set_subtitle: &t!("backlight_threshold_on_subtitle"),
 
                 #[watch]
                 set_sensitive: model.aufhellung_aktiv,
@@ -115,8 +116,8 @@ impl Component for AutoBeleuchtungModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "Automatische Abdunklung",
-                set_subtitle: "Schaltet die Hintergrundbeleuchtung automatisch aus, wenn es hell ist.",
+                set_title: &t!("backlight_auto_off_title"),
+                set_subtitle: &t!("backlight_auto_off_subtitle"),
 
                 #[watch]
                 set_active: model.abdunklung_aktiv,
@@ -127,8 +128,8 @@ impl Component for AutoBeleuchtungModel {
             },
 
             add = &adw::ActionRow {
-                set_title: "Schwellenwert für Abdunklung (Lux)",
-                set_subtitle: "Lichtlevel, über dem die Tastatur ausgeht",
+                set_title: &t!("backlight_threshold_off_title"),
+                set_subtitle: &t!("backlight_threshold_off_subtitle"),
 
                 #[watch]
                 set_sensitive: model.abdunklung_aktiv,
@@ -311,9 +312,9 @@ fn start_sensor_loop(
         let conn = match zbus::Connection::system().await {
             Ok(c) => c,
             Err(e) => {
-                out.emit(AutoBeleuchtungOutput::Fehler(format!(
-                    "D-Bus Verbindung fehlgeschlagen: {e}"
-                )));
+                out.emit(AutoBeleuchtungOutput::Fehler(
+                    t!("error_dbus_connection", error = e.to_string()).to_string(),
+                ));
                 return;
             }
         };
@@ -321,17 +322,17 @@ fn start_sensor_loop(
         let proxy = match SensorProxyProxy::new(&conn).await {
             Ok(p) => p,
             Err(e) => {
-                out.emit(AutoBeleuchtungOutput::Fehler(format!(
-                    "SensorProxy fehlgeschlagen: {e}"
-                )));
+                out.emit(AutoBeleuchtungOutput::Fehler(
+                    t!("error_sensor_proxy", error = e.to_string()).to_string(),
+                ));
                 return;
             }
         };
 
         if let Err(e) = proxy.claim_light().await {
-            out.emit(AutoBeleuchtungOutput::Fehler(format!(
-                "claim_light fehlgeschlagen: {e}"
-            )));
+            out.emit(AutoBeleuchtungOutput::Fehler(
+                t!("error_claim_light", error = e.to_string()).to_string(),
+            ));
             return;
         }
 
@@ -354,7 +355,10 @@ fn start_sensor_loop(
                 .await;
                 out.emit(AutoBeleuchtungOutput::LuxAktualisiert(level));
             }
-            Err(e) => eprintln!("Startwert LightLevel fehlgeschlagen: {e}"),
+            Err(e) => eprintln!(
+                "{}",
+                t!("backlight_sensor_init_error", error = e.to_string())
+            ),
         }
 
         tokio::pin!(level_stream);
@@ -385,7 +389,10 @@ fn start_sensor_loop(
                                 .await;
                                 out.emit(AutoBeleuchtungOutput::LuxAktualisiert(level));
                             }
-                            Err(e) => eprintln!("LightLevel lesen fehlgeschlagen: {e}"),
+                            Err(e) => eprintln!(
+                                "{}",
+                                t!("backlight_sensor_read_error", error = e.to_string())
+                            ),
                         }
                     } else {
                         // Stream beendet
@@ -472,18 +479,18 @@ impl Component for RuhezustandModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Ruhezustand der Tastaturhintergrundbeleuchtung",
-            set_description: Some("Legt fest, wann die Tastaturhintergrundbeleuchtung in den Ruhezustand versetzt wird."),
+            set_title: &t!("sleep_group_title"),
+            set_description: Some(&t!("sleep_group_desc")),
 
             add = &adw::ActionRow {
-                set_title: "Nichts wird ausgeführt",
-                set_subtitle: "Tastaturhintergrundbeleuchtung immer aktiviert lassen",
+                set_title: &t!("sleep_mode_never_title"),
+                set_subtitle: &t!("sleep_mode_never_subtitle"),
                 add_prefix = &model.check_nichts.clone(),
                 set_activatable_widget: Some(&model.check_nichts),
             },
 
             add = &adw::ActionRow {
-                set_title: "Im Akkubetrieb oder im Netzteilbetrieb",
+                set_title: &t!("sleep_mode_always_title"),
                 add_prefix = &model.check_akku_netz.clone(),
                 set_activatable_widget: Some(&model.check_akku_netz),
                 add_suffix = &model.dropdown_akku_netz.clone() -> gtk::DropDown {
@@ -494,7 +501,7 @@ impl Component for RuhezustandModel {
             },
 
             add = &adw::ActionRow {
-                set_title: "Nur im Akkubetrieb",
+                set_title: &t!("sleep_mode_battery_title"),
                 add_prefix = &model.check_nur_akku.clone(),
                 set_activatable_widget: Some(&model.check_nur_akku),
                 add_suffix = &model.dropdown_nur_akku.clone() -> gtk::DropDown {
@@ -526,7 +533,10 @@ impl Component for RuhezustandModel {
             TimeoutModus::NurAkku => check_nur_akku.set_active(true),
         }
 
-        let zeitoptionen = gtk::StringList::new(&["1 Minute(n)", "2 Minute(n)", "5 Minute(n)"]);
+        let t1 = t!("sleep_timeout_1min");
+        let t2 = t!("sleep_timeout_2min");
+        let t5 = t!("sleep_timeout_5min");
+        let zeitoptionen = gtk::StringList::new(&[&t1, &t2, &t5]);
         let dropdown_akku_netz =
             gtk::DropDown::new(Some(zeitoptionen.clone()), gtk::Expression::NONE);
         let dropdown_nur_akku = gtk::DropDown::new(Some(zeitoptionen), gtk::Expression::NONE);
@@ -657,16 +667,16 @@ impl RuhezustandModel {
             {
                 Ok(c) => c,
                 Err(e) => {
-                    cmd_sender.emit(RuhezustandOutput::Fehler(format!(
-                        "swayidle starten fehlgeschlagen: {e}"
-                    )));
+                    cmd_sender.emit(RuhezustandOutput::Fehler(
+                        t!("error_swayidle_start", error = e.to_string()).to_string(),
+                    ));
                     return;
                 }
             };
             if let Err(e) = child.wait().await {
-                cmd_sender.emit(RuhezustandOutput::Fehler(format!(
-                    "swayidle warten fehlgeschlagen: {e}"
-                )));
+                cmd_sender.emit(RuhezustandOutput::Fehler(
+                    t!("error_swayidle_wait", error = e.to_string()).to_string(),
+                ));
             }
         });
 

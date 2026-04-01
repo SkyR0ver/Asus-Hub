@@ -4,6 +4,7 @@ use gtk4 as gtk;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use super::helpers::{icm_profil_anwenden, icm_profil_reset, setup_icm_profiles};
 use crate::services::config::AppConfig;
@@ -25,12 +26,12 @@ pub struct FarbskalaModel {
 }
 
 impl FarbskalaModel {
-    fn farbskala_beschreibung(&self) -> &'static str {
+    fn farbskala_beschreibung(&self) -> std::borrow::Cow<'static, str> {
         match self.farbskala_index {
-            1 => "Standardfarben für Webinhalte und sRGB-Geräte.",
-            2 => "Standardfarben für digitales Kino (DCI-P3).",
-            3 => "Umfangreichere, naturgetreue Farben für kreative Arbeit.",
-            _ => "Standardmäßig lebendige, optimierte Farben.",
+            1 => t!("farbskala_desc_srgb"),
+            2 => t!("farbskala_desc_dcip3"),
+            3 => t!("farbskala_desc_displayp3"),
+            _ => t!("farbskala_desc_native"),
         }
     }
 }
@@ -57,15 +58,10 @@ impl Component for FarbskalaModel {
     view! {
         adw::PreferencesGroup {
             add = &adw::ComboRow {
-                set_title: "Farbskala",
+                set_title: &t!("farbskala_title"),
                 #[watch]
-                set_subtitle: model.farbskala_beschreibung(),
-                set_model: Some(&gtk::StringList::new(&[
-                    "Nativ",
-                    "sRGB",
-                    "DCI-P3",
-                    "Display P3",
-                ])),
+                set_subtitle: &model.farbskala_beschreibung(),
+                set_model: Some(&farbskala_list),
                 #[watch]
                 set_selected: model.farbskala_index,
                 connect_selected_notify[sender] => move |row| {
@@ -81,6 +77,9 @@ impl Component for FarbskalaModel {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let config = AppConfig::load();
+
+        let native = t!("farbskala_option_native");
+        let farbskala_list = gtk::StringList::new(&[&native, "sRGB", "DCI-P3", "Display P3"]);
 
         let model = FarbskalaModel {
             farbskala_index: config.farbskala_index,
@@ -115,7 +114,7 @@ impl Component for FarbskalaModel {
                 if let Some(basis) = self.icm_basis_pfad.clone() {
                     profil_anwenden(index, basis, &sender);
                 } else {
-                    eprintln!("ICM-Basispfad noch nicht bereit");
+                    eprintln!("{}", t!("farbskala_icm_path_not_ready"));
                 }
             }
         }
@@ -129,14 +128,20 @@ impl Component for FarbskalaModel {
     ) {
         match msg {
             FarbskalaCommandOutput::IcmBereit(pfad) => {
-                eprintln!("ICM-Profile bereit unter {}", pfad.display());
+                eprintln!(
+                    "{}",
+                    t!("farbskala_icm_ready", path = pfad.display().to_string())
+                );
                 if self.farbskala_index > 0 {
                     profil_anwenden(self.farbskala_index, pfad.clone(), &sender);
                 }
                 self.icm_basis_pfad = Some(pfad);
             }
             FarbskalaCommandOutput::ProfilAngewendet(index) => {
-                eprintln!("Farbskala: Profil-Index {} angewendet", index);
+                eprintln!(
+                    "{}",
+                    t!("farbskala_profile_applied", index = index.to_string())
+                );
             }
             FarbskalaCommandOutput::Fehler(e) => {
                 let _ = sender.output(e);

@@ -3,6 +3,7 @@ use gtk::glib;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 use tokio::sync::watch;
 
 use crate::services::config::AppConfig;
@@ -29,8 +30,8 @@ impl Component for GesturenModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Intelligente Gesten",
-            set_description: Some("Greifen Sie schnell auf häufig verwendete Einstellungen und Apps zu."),
+            set_title: &t!("gestures_group_title"),
+            set_description: Some(&t!("gestures_group_desc")),
 
             add = &gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
@@ -48,7 +49,7 @@ impl Component for GesturenModel {
                     add_css_class: "boxed-list",
 
                     append = &adw::SwitchRow {
-                        set_title: "Erweiterte Gesten aktivieren/deaktivieren",
+                        set_title: &t!("gestures_toggle_title"),
 
                         #[watch]
                         set_active: model.aktiv,
@@ -59,18 +60,18 @@ impl Component for GesturenModel {
                     },
 
                     append = &adw::ActionRow {
-                        set_title: "Lautstärke einstellen",
-                        set_subtitle: "Wischen Sie mit einem Finger am linken Rand nach oben oder unten.",
+                        set_title: &t!("gestures_volume_title"),
+                        set_subtitle: &t!("gestures_volume_subtitle"),
                     },
 
                     append = &adw::ActionRow {
-                        set_title: "Helligkeit einstellen",
-                        set_subtitle: "Wischen Sie mit einem Finger am rechten Rand nach oben oder unten.",
+                        set_title: &t!("gestures_brightness_title"),
+                        set_subtitle: &t!("gestures_brightness_subtitle"),
                     },
 
                     append = &adw::ActionRow {
-                        set_title: "Vor-/Zurückspulen",
-                        set_subtitle: "Wischen Sie mit einem Finger am oberen Rand nach links oder rechts.",
+                        set_title: &t!("gestures_media_title"),
+                        set_subtitle: &t!("gestures_media_subtitle"),
                     },
                 },
             },

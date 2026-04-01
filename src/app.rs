@@ -11,11 +11,13 @@ use crate::tray;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 #[derive(Debug)]
 pub enum AppMsg {
     ShowWindow,
     Fehler(String),
+    SpracheSetzen(String),
 }
 
 pub struct AppModel {
@@ -41,7 +43,7 @@ impl SimpleComponent for AppModel {
 
     view! {
         adw::ApplicationWindow {
-            set_title: Some("Zenbook Control Center"),
+            set_title: Some(&t!("app_title")),
             set_default_size: (1200, 800),
 
             #[wrap(Some)]
@@ -53,7 +55,7 @@ impl SimpleComponent for AppModel {
                         set_title_widget = &adw::ViewSwitcher {
                             set_stack: Some(&my_stack),
                             set_policy: adw::ViewSwitcherPolicy::Wide,
-                        }
+                        },
                     },
                     set_content: Some(&my_stack),
                 },
@@ -70,8 +72,17 @@ impl SimpleComponent for AppModel {
                 }
             }
             AppMsg::Fehler(text) => {
-                eprintln!("Fehler: {text}");
+                eprintln!("{} {}", t!("error_prefix"), text);
                 let toast = adw::Toast::new(&text);
+                toast.set_timeout(5);
+                self.toast_overlay.add_toast(toast);
+            }
+            AppMsg::SpracheSetzen(lang) => {
+                crate::services::config::AppConfig::update(|c| {
+                    c.language = lang.clone();
+                });
+                rust_i18n::set_locale(&lang);
+                let toast = adw::Toast::new(&t!("lang_restart_toast"));
                 toast.set_timeout(5);
                 self.toast_overlay.add_toast(toast);
             }
@@ -150,7 +161,7 @@ impl SimpleComponent for AppModel {
         let anzeige_page = adw::PreferencesPage::new();
         anzeige_page.add(oled_care_widget);
         anzeige_page.add(farbskala_widget);
-        my_stack.add_titled_with_icon(&anzeige_page, None, "Anzeige", "monitor-symbolic");
+        my_stack.add_titled_with_icon(&anzeige_page, None, &t!("tab_display"), "monitor-symbolic");
 
         let tastatur_page = adw::PreferencesPage::new();
         tastatur_page.add(auto_beleuchtung_widget);
@@ -161,14 +172,52 @@ impl SimpleComponent for AppModel {
         my_stack.add_titled_with_icon(
             &tastatur_page,
             None,
-            "Maus & Tastatur",
+            &t!("tab_keyboard"),
             "input-keyboard-symbolic",
         );
 
         let system_page = adw::PreferencesPage::new();
         system_page.add(battery_widget);
         system_page.add(fan_widget);
-        my_stack.add_titled_with_icon(&system_page, None, "System", "preferences-system-symbolic");
+
+        let lang_group = adw::PreferencesGroup::new();
+        lang_group.set_title(&t!("app_settings_title"));
+
+        let lang_row = adw::ActionRow::new();
+        lang_row.set_title(&t!("language_title"));
+
+        let lang_dropdown = gtk4::DropDown::from_strings(&["English", "Deutsch"]);
+        lang_dropdown.set_valign(gtk4::Align::Center);
+
+        let current_lang = crate::services::config::AppConfig::load().language;
+        if current_lang == "de" {
+            lang_dropdown.set_selected(1);
+        } else {
+            lang_dropdown.set_selected(0);
+        }
+
+        let sender_clone = sender.clone();
+        lang_dropdown.connect_selected_notify(move |dd| {
+            let lang = if dd.selected() == 1 {
+                "de".to_string()
+            } else {
+                "en".to_string()
+            };
+            sender_clone.input(AppMsg::SpracheSetzen(lang));
+        });
+
+        lang_row.add_suffix(&lang_dropdown);
+        lang_row.set_activatable_widget(Some(&lang_dropdown));
+        lang_group.add(&lang_row);
+
+        system_page.add(&lang_group);
+
+        my_stack.add_titled_with_icon(
+            &system_page,
+            None,
+            &t!("tab_system"),
+            "preferences-system-symbolic",
+        );
 
         let widgets = view_output!();
 

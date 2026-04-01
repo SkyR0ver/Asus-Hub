@@ -2,6 +2,7 @@ use gtk4 as gtk;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use crate::services::config::AppConfig;
 use crate::services::dbus;
@@ -34,25 +35,25 @@ impl Component for FanModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Lüftermodus",
+            set_title: &t!("fan_group_title"),
 
             add = &adw::ActionRow {
-                set_title: "Leistungsmodus",
-                set_subtitle: "Maximiert dynamisch die Kühlleistung für rechenintensive Aufgaben.",
+                set_title: &t!("fan_performance_title"),
+                set_subtitle: &t!("fan_performance_subtitle"),
                 add_prefix = &model.check_leistung.clone(),
                 set_activatable_widget: Some(&model.check_leistung),
             },
 
             add = &adw::ActionRow {
-                set_title: "Standardmodus",
-                set_subtitle: "Wählt dynamisch die optimale Lüftergeschwindigkeit für den alltäglichen Gebrauch.",
+                set_title: &t!("fan_balanced_title"),
+                set_subtitle: &t!("fan_balanced_subtitle"),
                 add_prefix = &model.check_standard.clone(),
                 set_activatable_widget: Some(&model.check_standard),
             },
 
             add = &adw::ActionRow {
-                set_title: "Flüstermodus",
-                set_subtitle: "Minimiert dynamisch die Lüftergeschwindigkeit für eine leise Umgebung.",
+                set_title: &t!("fan_quiet_title"),
+                set_subtitle: &t!("fan_quiet_subtitle"),
                 add_prefix = &model.check_fluester.clone(),
                 set_activatable_widget: Some(&model.check_fluester),
             },
@@ -152,7 +153,10 @@ impl Component for FanModel {
     ) {
         match msg {
             FanCommandOutput::ProfilGesetzt(profile) => {
-                eprintln!("Lüfterprofil auf {:?} gesetzt", profile);
+                eprintln!(
+                    "{}",
+                    t!("fan_profile_set", profile = format!("{:?}", profile))
+                );
             }
             FanCommandOutput::Fehler(e) => {
                 let _ = sender.output(e);

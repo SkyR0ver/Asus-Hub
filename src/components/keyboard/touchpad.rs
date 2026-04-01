@@ -1,6 +1,7 @@
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use crate::components::display::helpers::qdbus_ausfuehren;
 use crate::services::commands::run_command_blocking;
@@ -35,15 +36,15 @@ impl Component for TouchpadModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Touchpad",
+            set_title: &t!("touchpad_group_title"),
 
             add = &gtk::ListBox {
                 set_hexpand: true,
                 add_css_class: "boxed-list",
 
                 append = &adw::SwitchRow {
-                    set_title: "Touchpad aktivieren",
-                    set_subtitle: "Schaltet das Touchpad vollständig ein oder aus.",
+                    set_title: &t!("touchpad_enable_title"),
+                    set_subtitle: &t!("touchpad_enable_subtitle"),
 
                     #[watch]
                     set_active: model.touchpad_aktiv,
@@ -58,13 +59,10 @@ impl Component for TouchpadModel {
                     set_visible: model.bestaetigung_erforderlich,
 
                     #[watch]
-                    set_title: &format!(
-                        "Touchpad deaktiviert. Automatische Reaktivierung in {} Sekunden...",
-                        model.countdown
-                    ),
+                    set_title: &t!("touchpad_countdown_title", seconds = model.countdown.to_string()),
 
                     add_suffix = &gtk::Button {
-                        set_label: "Einstellung bestätigen",
+                        set_label: &t!("touchpad_confirm_label"),
                         add_css_class: "suggested-action",
                         set_valign: gtk::Align::Center,
 
@@ -208,11 +206,8 @@ async fn touchpad_befehl_ausfuehren(aktiv: bool) -> Result<(), String> {
             methode.to_string(),
         ])
         .await
-        .map_err(|e| format!("KDE Touchpad-Toggle fehlgeschlagen. {e}"))
+        .map_err(|e| t!("error_touchpad_kde", error = e).to_string())
     } else {
-        Err(format!(
-            "Desktop-Umgebung '{desktop}' wird für \
-             Touchpad-Steuerung nicht unterstützt."
-        ))
+        Err(t!("error_touchpad_unsupported_desktop", desktop = desktop).to_string())
     }
 }

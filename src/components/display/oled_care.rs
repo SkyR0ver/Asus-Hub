@@ -1,6 +1,7 @@
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use super::helpers::{kwriteconfig_ausfuehren, qdbus_ausfuehren};
 use crate::services::config::AppConfig;
@@ -35,11 +36,11 @@ impl Component for OledCareModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "ASUS OLED Care",
+            set_title: &t!("oled_care_group_title"),
 
             add = &adw::SwitchRow {
-                set_title: "Pixelaktualisierung",
-                set_subtitle: "Starten eines speziellen Bildschirmschoners nach Inaktivität, um OLED-Pixel gleichmäßig zu belasten.",
+                set_title: &t!("oled_care_pixel_refresh_title"),
+                set_subtitle: &t!("oled_care_pixel_refresh_subtitle"),
 
                 #[watch]
                 set_active: model.pixel_refresh_aktiv,
@@ -50,8 +51,8 @@ impl Component for OledCareModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "KDE-Panel automatisch ausblenden",
-                set_subtitle: "Blendet das KDE-Panel automatisch aus, um statische Elemente auf dem OLED-Display zu reduzieren.",
+                set_title: &t!("oled_care_panel_autohide_title"),
+                set_subtitle: &t!("oled_care_panel_autohide_subtitle"),
 
                 #[watch]
                 set_active: model.panel_ausblenden_aktiv,
@@ -62,8 +63,8 @@ impl Component for OledCareModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "Transparenzeffekt des Panels",
-                set_subtitle: "Aktiviert die Transparenz des KDE-Panels, um OLED-Einbrennen zu reduzieren.",
+                set_title: &t!("oled_care_transparency_title"),
+                set_subtitle: &t!("oled_care_transparency_subtitle"),
 
                 #[watch]
                 set_active: model.transparenz_aktiv,
@@ -183,22 +184,16 @@ impl Component for OledCareModel {
     ) {
         match msg {
             OledCareCommandOutput::PanelGesetzt(aktiv) => {
-                eprintln!(
-                    "KDE-Panel Auto-Hide auf {} gesetzt",
-                    if aktiv { "autohide" } else { "none" }
-                );
+                let value = if aktiv { "autohide" } else { "none" };
+                eprintln!("{}", t!("oled_care_panel_set", value = value));
             }
             OledCareCommandOutput::TransparenzGesetzt(aktiv) => {
-                eprintln!(
-                    "Panel-Transparenz auf {} gesetzt",
-                    if aktiv { "transparent" } else { "opaque" }
-                );
+                let value = if aktiv { "transparent" } else { "opaque" };
+                eprintln!("{}", t!("oled_care_transparency_set", value = value));
             }
             OledCareCommandOutput::PixelRefreshGesetzt(aktiv) => {
-                eprintln!(
-                    "DPMS idleTime auf {} gesetzt",
-                    if aktiv { "300s" } else { "600s" }
-                );
+                let value = if aktiv { "300s" } else { "600s" };
+                eprintln!("{}", t!("oled_care_dpms_set", value = value));
             }
             OledCareCommandOutput::Fehler(e) => {
                 let _ = sender.output(e);

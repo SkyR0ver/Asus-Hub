@@ -11,6 +11,9 @@ fn default_abdunklung_schwelle() -> f64 {
 fn default_touchpad_aktiv() -> bool {
     true
 }
+fn default_language() -> String {
+    "en".to_string()
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AppConfig {
@@ -38,6 +41,8 @@ pub struct AppConfig {
     pub kbd_abdunklung_schwelle: f64,
     #[serde(default = "default_touchpad_aktiv")]
     pub touchpad_aktiv: bool,
+    #[serde(default = "default_language")]
+    pub language: String,
 }
 
 impl Default for AppConfig {
@@ -59,6 +64,7 @@ impl Default for AppConfig {
             kbd_aufhellung_schwelle: default_aufhellung_schwelle(),
             kbd_abdunklung_schwelle: default_abdunklung_schwelle(),
             touchpad_aktiv: default_touchpad_aktiv(),
+            language: default_language(),
         }
     }
 }

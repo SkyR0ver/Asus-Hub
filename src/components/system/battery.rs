@@ -1,6 +1,7 @@
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use crate::services::commands::pkexec_shell;
 use crate::services::config::AppConfig;
@@ -39,11 +40,11 @@ impl Component for BatteryModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Energie &amp; Leistung",
+            set_title: &t!("battery_group_title"),
 
             add = &adw::SwitchRow {
-                set_title: "Akku-Wartungsmodus",
-                set_subtitle: "Aktivieren Sie den Akku-Wartungsmodus, um die Akkuladung auf 80% der vollen Kapazität zu begrenzen und so die Lebensdauer des Akkus zu verbessern.",
+                set_title: &t!("battery_maintenance_title"),
+                set_subtitle: &t!("battery_maintenance_subtitle"),
 
                 #[watch]
                 set_active: model.wartungsmodus_aktiv,
@@ -54,8 +55,8 @@ impl Component for BatteryModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "Volle Aufladung sofort-Modus",
-                set_subtitle: "Im Volle Aufladung sofort-Modus wird der Akku zu 100% aufgeladen. Der Akku-Wartungsmodus wird nach 24 Stunden wieder aktiviert.",
+                set_title: &t!("battery_full_charge_title"),
+                set_subtitle: &t!("battery_full_charge_subtitle"),
 
                 #[watch]
                 set_active: model.volle_aufladung_aktiv,
@@ -69,8 +70,8 @@ impl Component for BatteryModel {
             },
 
             add = &adw::SwitchRow {
-                set_title: "Tiefschlafhilfe",
-                set_subtitle: "Um den Akku zu schonen, versetzt die Tiefschlafhilfe das System in den Tiefschlafmodus, wenn es in einem festgelegten Zeitraum zu viel Strom verbraucht hat.",
+                set_title: &t!("battery_deep_sleep_title"),
+                set_subtitle: &t!("battery_deep_sleep_subtitle"),
 
                 #[watch]
                 set_active: model.tiefschlaf_aktiv,
@@ -115,9 +116,9 @@ impl Component for BatteryModel {
                             out.emit(BatteryCommandOutput::InitTiefschlaf(aktiv));
                         }
                         Err(e) => {
-                            out.emit(BatteryCommandOutput::Fehler(format!(
-                                "mem_sleep lesen fehlgeschlagen: {e}"
-                            )));
+                            out.emit(BatteryCommandOutput::Fehler(
+                                t!("error_mem_sleep_read", error = e.to_string()).to_string(),
+                            ));
                         }
                     }
                 })
@@ -232,13 +233,14 @@ impl Component for BatteryModel {
                 self.tiefschlaf_aktiv = aktiv;
             }
             BatteryCommandOutput::TiefschlafGesetzt(aktiv) => {
-                eprintln!(
-                    "Tiefschlafhilfe auf {} gesetzt",
-                    if aktiv { "deep" } else { "s2idle" }
-                );
+                let value = if aktiv { "deep" } else { "s2idle" };
+                eprintln!("{}", t!("battery_deep_sleep_set", value = value));
             }
             BatteryCommandOutput::LadelimitGesetzt(val) => {
-                eprintln!("Ladelimit auf {val}% gesetzt");
+                eprintln!(
+                    "{}",
+                    t!("battery_charge_limit_set", value = val.to_string())
+                );
             }
             BatteryCommandOutput::Fehler(e) => {
                 let _ = sender.output(e);

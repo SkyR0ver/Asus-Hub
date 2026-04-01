@@ -2,6 +2,7 @@ use gtk4 as gtk;
 use relm4::adw;
 use relm4::adw::prelude::*;
 use relm4::prelude::*;
+use rust_i18n::t;
 
 use crate::services::commands::run_command_blocking;
 use crate::services::config::AppConfig;
@@ -33,7 +34,7 @@ impl Component for FnKeyModel {
 
     view! {
         adw::PreferencesGroup {
-            set_title: "Funktionstaste",
+            set_title: &t!("fn_key_group_title"),
 
             add = &model.zeile_hinweis.clone(),
             add = &model.zeile_gesperrt.clone(),
@@ -76,23 +77,19 @@ impl Component for FnKeyModel {
         }
 
         let zeile_hinweis = adw::ActionRow::new();
-        zeile_hinweis.set_title("Hinweis");
-        zeile_hinweis.set_subtitle(
-            "Hinweis: Änderungen am Bootloader werden erst nach einem Systemneustart wirksam.",
-        );
+        zeile_hinweis.set_title(&t!("fn_key_hint_title"));
+        zeile_hinweis.set_subtitle(&t!("fn_key_hint_subtitle"));
         zeile_hinweis.set_selectable(false);
 
         let zeile_gesperrt = adw::ActionRow::new();
-        zeile_gesperrt.set_title("Gesperrte Fn-Taste");
-        zeile_gesperrt.set_subtitle(
-            "Drücken Sie F1–F12, um die angegebene Schnelltasten-Funktion zu aktivieren.",
-        );
+        zeile_gesperrt.set_title(&t!("fn_key_locked_title"));
+        zeile_gesperrt.set_subtitle(&t!("fn_key_locked_subtitle"));
         zeile_gesperrt.add_prefix(&check_gesperrt);
         zeile_gesperrt.set_activatable_widget(Some(&check_gesperrt));
 
         let zeile_normal = adw::ActionRow::new();
-        zeile_normal.set_title("Normale Fn-Taste");
-        zeile_normal.set_subtitle("Drücken Sie F1–F12, um die F1–F12-Funktionen zu verwenden.");
+        zeile_normal.set_title(&t!("fn_key_normal_title"));
+        zeile_normal.set_subtitle(&t!("fn_key_normal_subtitle"));
         zeile_normal.add_prefix(&check_normal);
         zeile_normal.set_activatable_widget(Some(&check_normal));
 
@@ -155,14 +152,17 @@ impl Component for FnKeyModel {
         match msg {
             FnKeyCommandOutput::Gesetzt(gesperrt) => {
                 AppConfig::update(|c| c.input_fn_key_gesperrt = gesperrt);
-                self.zeile_hinweis.set_subtitle(&format!(
-                    "Fn-Taste {} gespeichert – wirksam nach Systemneustart.",
-                    if gesperrt { "gesperrt" } else { "normal" }
-                ));
+                let mode = if gesperrt {
+                    t!("fn_key_mode_locked")
+                } else {
+                    t!("fn_key_mode_normal")
+                };
+                self.zeile_hinweis
+                    .set_subtitle(&t!("fn_key_saved", mode = mode));
             }
             FnKeyCommandOutput::Fehler(e) => {
                 self.zeile_hinweis
-                    .set_subtitle(&format!("Fehler beim Speichern: {e}"));
+                    .set_subtitle(&t!("fn_key_save_error", error = e.clone()));
                 let _ = sender.output(e);
             }
         }

@@ -1,5 +1,6 @@
 use crate::services::commands::run_command_blocking;
 use crate::services::config::AppConfig;
+use rust_i18n::t;
 
 const SRGB_ICM: &[u8] = include_bytes!("../../../assets/icm/ASUS_sRGB.icm");
 const DCIP3_ICM: &[u8] = include_bytes!("../../../assets/icm/ASUS_DCIP3.icm");
@@ -7,13 +8,13 @@ const DISPLAYP3_ICM: &[u8] = include_bytes!("../../../assets/icm/ASUS_DisplayP3.
 
 pub(crate) async fn setup_icm_profiles() -> Result<std::path::PathBuf, String> {
     let basis = AppConfig::config_dir()
-        .ok_or_else(|| "Konnte Config-Verzeichnis nicht bestimmen".to_string())?
+        .ok_or_else(|| t!("error_config_dir").to_string())?
         .join("icm");
 
     let basis_clone = basis.clone();
     tokio::task::spawn_blocking(move || {
         std::fs::create_dir_all(&basis_clone)
-            .map_err(|e| format!("ICM-Verzeichnis erstellen fehlgeschlagen: {e}"))?;
+            .map_err(|e| t!("error_icm_dir_create", error = e.to_string()).to_string())?;
 
         for (name, data) in [
             ("ASUS_sRGB.icm", SRGB_ICM),
@@ -22,14 +23,15 @@ pub(crate) async fn setup_icm_profiles() -> Result<std::path::PathBuf, String> {
         ] {
             let pfad = basis_clone.join(name);
             if !pfad.exists() {
-                std::fs::write(&pfad, data)
-                    .map_err(|e| format!("ICM-Profil '{name}' schreiben fehlgeschlagen: {e}"))?;
+                std::fs::write(&pfad, data).map_err(|e| {
+                    t!("error_icm_write", name = name, error = e.to_string()).to_string()
+                })?;
             }
         }
         Ok::<(), String>(())
     })
     .await
-    .map_err(|e| format!("spawn_blocking fehlgeschlagen: {e}"))??;
+    .map_err(|e| t!("error_spawn_blocking", error = e.to_string()).to_string())??;
 
     Ok(basis)
 }
@@ -68,12 +70,14 @@ pub(crate) async fn qdbus_ausfuehren(args: Vec<String>) -> Result<(), String> {
 
     match result {
         Ok(Ok((_, status))) if status.success() => Ok(()),
-        Ok(Ok((cmd, status))) => Err(format!(
-            "{cmd} fehlgeschlagen mit Exit-Code: {}",
-            status.code().unwrap_or(-1)
-        )),
-        Ok(Err(e)) => Err(format!("qdbus starten fehlgeschlagen: {e}")),
-        Err(e) => Err(format!("spawn_blocking fehlgeschlagen: {e}")),
+        Ok(Ok((cmd, status))) => Err(t!(
+            "error_cmd_exit_code",
+            cmd = cmd,
+            code = status.code().unwrap_or(-1).to_string()
+        )
+        .to_string()),
+        Ok(Err(e)) => Err(t!("error_qdbus_start", error = e.to_string()).to_string()),
+        Err(e) => Err(t!("error_spawn_blocking", error = e.to_string()).to_string()),
     }
 }
 
