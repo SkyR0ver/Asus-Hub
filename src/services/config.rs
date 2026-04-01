@@ -15,7 +15,6 @@ fn default_touchpad_aktiv() -> bool {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AppConfig {
     pub farbskala_index: u32,
-    pub zielmodus_aktiv: bool,
     pub oled_care_pixel_refresh: bool,
     pub oled_care_panel_autohide: bool,
     pub oled_care_transparenz: bool,
@@ -45,7 +44,6 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             farbskala_index: 0,
-            zielmodus_aktiv: false,
             oled_care_pixel_refresh: false,
             oled_care_panel_autohide: false,
             oled_care_transparenz: false,

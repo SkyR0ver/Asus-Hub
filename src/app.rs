@@ -1,6 +1,5 @@
 use crate::components::display::FarbskalaModel;
 use crate::components::display::OledCareModel;
-use crate::components::display::ZielmodusModel;
 use crate::components::keyboard::AutoBeleuchtungModel;
 use crate::components::keyboard::FnKeyModel;
 use crate::components::keyboard::GesturenModel;
@@ -27,7 +26,6 @@ pub struct AppModel {
     fan: Controller<FanModel>,
     oled_care: Controller<OledCareModel>,
     farbskala: Controller<FarbskalaModel>,
-    zielmodus: Controller<ZielmodusModel>,
     fn_key: Controller<FnKeyModel>,
     gesten: Controller<GesturenModel>,
     touchpad: Controller<TouchpadModel>,
@@ -98,7 +96,6 @@ impl SimpleComponent for AppModel {
         let farbskala = FarbskalaModel::builder()
             .launch(())
             .forward(sender.input_sender(), fehler);
-        let zielmodus = ZielmodusModel::builder().launch(()).detach();
         let fn_key = FnKeyModel::builder()
             .launch(())
             .forward(sender.input_sender(), fehler);
@@ -131,7 +128,6 @@ impl SimpleComponent for AppModel {
             fan,
             oled_care,
             farbskala,
-            zielmodus,
             fn_key,
             gesten,
             touchpad,
@@ -143,7 +139,6 @@ impl SimpleComponent for AppModel {
         let fan_widget = model.fan.widget();
         let oled_care_widget = model.oled_care.widget();
         let farbskala_widget = model.farbskala.widget();
-        let zielmodus_widget = model.zielmodus.widget();
         let fn_key_widget = model.fn_key.widget();
         let gesten_widget = model.gesten.widget();
         let touchpad_widget = model.touchpad.widget();
@@ -155,7 +150,6 @@ impl SimpleComponent for AppModel {
         let anzeige_page = adw::PreferencesPage::new();
         anzeige_page.add(oled_care_widget);
         anzeige_page.add(farbskala_widget);
-        anzeige_page.add(zielmodus_widget);
         my_stack.add_titled_with_icon(&anzeige_page, None, "Anzeige", "monitor-symbolic");
 
         let tastatur_page = adw::PreferencesPage::new();
