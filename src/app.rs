@@ -1,3 +1,6 @@
+use std::os::unix::process::CommandExt;
+use std::process::Command;
+
 use crate::components::audio::SoundModesModel;
 use crate::components::audio::VolumeModel;
 use crate::components::display::FarbskalaModel;
@@ -367,6 +370,51 @@ impl SimpleComponent for AppModel {
         sidebar_toolbar.add_top_bar(&sidebar_header);
         sidebar_toolbar.add_top_bar(&search_widgets.bar);
         sidebar_toolbar.set_content(Some(&sidebar_list));
+
+        // --- Bottom-Bar: GitHub + "Made by Guido" + Version ---
+        {
+            let bottom_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+            bottom_box.set_margin_top(6);
+            bottom_box.set_margin_bottom(6);
+            bottom_box.set_margin_start(10);
+            bottom_box.set_margin_end(10);
+
+            let svg_bytes = include_bytes!("../assets/img/github.svg");
+            let github_btn = gtk4::Button::new();
+            github_btn.add_css_class("flat");
+            github_btn.set_tooltip_text(Some("GitHub"));
+            let glib_bytes = gtk4::glib::Bytes::from_static(svg_bytes);
+            if let Ok(texture) = gtk4::gdk::Texture::from_bytes(&glib_bytes) {
+                let gh_icon = gtk4::Image::from_paintable(Some(&texture));
+                gh_icon.set_pixel_size(16);
+                github_btn.set_child(Some(&gh_icon));
+            }
+            github_btn.connect_clicked(|_| {
+                // xdg-open nutzen und den Browser in eine komplett neue Prozessgruppe (0) auslagern,
+                // damit STRG+C im Terminal ihn nicht mitreißt.
+                let _ = Command::new("xdg-open")
+                    .arg("https://github.com/Traciges")
+                    .process_group(0)
+                    .spawn();
+            });
+
+            let made_by_label = gtk4::Label::new(Some("Made by Guido"));
+            made_by_label.add_css_class("dim-label");
+            made_by_label.set_margin_start(6);
+
+            let spacer = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+            spacer.set_hexpand(true);
+
+            let version_label = gtk4::Label::new(Some(concat!("v", env!("CARGO_PKG_VERSION"))));
+            version_label.add_css_class("dim-label");
+
+            bottom_box.append(&github_btn);
+            bottom_box.append(&made_by_label);
+            bottom_box.append(&spacer);
+            bottom_box.append(&version_label);
+
+            sidebar_toolbar.add_bottom_bar(&bottom_box);
+        }
 
         let sidebar_nav_page = adw::NavigationPage::new(&sidebar_toolbar, &t!("app_title"));
 

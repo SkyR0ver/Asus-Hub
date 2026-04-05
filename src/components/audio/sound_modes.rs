@@ -290,7 +290,10 @@ async fn ensure_easyeffects_running() {
         let _ = tokio::process::Command::new("easyeffects")
             .arg("--gapplication-service")
             .spawn();
-        tokio::time::sleep(tokio::time::Duration::from_millis(EASYEFFECTS_STARTUP_DELAY_MS)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(
+            EASYEFFECTS_STARTUP_DELAY_MS,
+        ))
+        .await;
     }
 }
 

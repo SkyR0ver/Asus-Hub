@@ -84,4 +84,3 @@ pub(crate) async fn qdbus_ausfuehren(args: Vec<String>) -> Result<(), String> {
         Err(e) => Err(t!("error_spawn_blocking", error = e.to_string()).to_string()),
     }
 }
-
