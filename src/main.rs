@@ -25,7 +25,7 @@ fn load_css() {
 fn main() {
     let config = services::config::AppConfig::load();
     rust_i18n::set_locale(&config.language);
-    let a = relm4::RelmApp::new("de.guido.zenbook-control");
+    let a = relm4::RelmApp::new("de.guido.asus-hub");
     load_css();
     relm4::adw::StyleManager::default().set_color_scheme(relm4::adw::ColorScheme::PreferDark);
     a.run::<app::AppModel>(());

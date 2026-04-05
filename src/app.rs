@@ -32,7 +32,7 @@ pub enum AppMsg {
 pub struct AppModel {
     window: gtk4::glib::WeakRef<adw::ApplicationWindow>,
     toast_overlay: adw::ToastOverlay,
-    _tray: ksni::Handle<tray::ZenbookTray>,
+    _tray: ksni::Handle<tray::AsusTray>,
     battery: Controller<BatteryModel>,
     fan: Controller<FanModel>,
     oled_dimming: Controller<OledDimmingModel>,
@@ -143,7 +143,7 @@ impl SimpleComponent for AppModel {
             .launch(())
             .forward(sender.input_sender(), fehler);
 
-        let tray_svc = ksni::TrayService::new(tray::ZenbookTray {
+        let tray_svc = ksni::TrayService::new(tray::AsusTray {
             app_sender: sender.input_sender().clone(),
         });
         let tray_handle = tray_svc.handle();

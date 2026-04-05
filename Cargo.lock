@@ -36,6 +36,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "asus-hub"
+version = "1.0.0"
+dependencies = [
+ "directories",
+ "evdev",
+ "futures-util",
+ "gtk4",
+ "ksni",
+ "libadwaita",
+ "relm4",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
 name = "async-broadcast"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2241,24 +2259,6 @@ dependencies = [
  "serde",
  "winnow 0.7.15",
  "zvariant",
-]
-
-[[package]]
-name = "zenbook-control"
-version = "1.0.0"
-dependencies = [
- "directories",
- "evdev",
- "futures-util",
- "gtk4",
- "ksni",
- "libadwaita",
- "relm4",
- "rust-i18n",
- "serde",
- "serde_json",
- "tokio",
- "zbus",
 ]
 
 [[package]]

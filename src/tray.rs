@@ -4,17 +4,17 @@ use ksni::menu::StandardItem;
 use ksni::{Icon, MenuItem, Tray};
 use relm4::Sender;
 
-pub struct ZenbookTray {
+pub struct AsusTray {
     pub app_sender: Sender<AppMsg>,
 }
 
-impl Tray for ZenbookTray {
+impl Tray for AsusTray {
     fn id(&self) -> String {
-        "ZenbookControl".into()
+        "AsusHub".into()
     }
 
     fn title(&self) -> String {
-        "Zenbook Control".into()
+        "Asus Hub".into()
     }
 
     fn icon_pixmap(&self) -> Vec<Icon> {
