@@ -45,6 +45,7 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub enum AppMsg {
     ShowWindow,
+    QuitApp,
     Fehler(String),
     SetLanguage(String),
 }
@@ -98,6 +99,9 @@ impl SimpleComponent for AppModel {
                     window.set_visible(true);
                     window.present();
                 }
+            }
+            AppMsg::QuitApp => {
+                relm4::main_application().quit();
             }
             AppMsg::Fehler(text) => {
                 tracing::warn!("{} {}", t!("error_prefix"), text);

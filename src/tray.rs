@@ -15,7 +15,6 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 
 use crate::app::AppMsg;
-use gtk4::prelude::ApplicationExt;
 use ksni::menu::StandardItem;
 use ksni::{Icon, MenuItem, Tray};
 use relm4::Sender;
@@ -52,8 +51,13 @@ impl Tray for AsusTray {
         }]
     }
 
+    fn activate(&mut self, _x: i32, _y: i32) {
+        self.app_sender.emit(AppMsg::ShowWindow);
+    }
+
     fn menu(&self) -> Vec<MenuItem<Self>> {
         let sender_show = self.app_sender.clone();
+        let sender_quit = self.app_sender.clone();
         vec![
             MenuItem::Standard(StandardItem {
                 label: t!("tray_show").to_string(),
@@ -65,8 +69,8 @@ impl Tray for AsusTray {
             MenuItem::Separator,
             MenuItem::Standard(StandardItem {
                 label: t!("tray_exit").to_string(),
-                activate: Box::new(|_| {
-                    relm4::main_application().quit();
+                activate: Box::new(move |_| {
+                    sender_quit.emit(AppMsg::QuitApp);
                 }),
                 ..Default::default()
             }),
