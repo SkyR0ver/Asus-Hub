@@ -15,6 +15,7 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 
 mod app;
+mod autostart;
 mod components;
 mod search;
 mod services;
@@ -45,5 +46,6 @@ fn main() {
     let a = relm4::RelmApp::new("de.guido.asus-hub");
     load_css();
     relm4::adw::StyleManager::default().set_color_scheme(relm4::adw::ColorScheme::PreferDark);
-    a.run::<app::AppModel>(());
+    let start_hidden = std::env::args().any(|arg| arg == "--hidden");
+    a.run::<app::AppModel>(start_hidden);
 }

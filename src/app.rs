@@ -48,9 +48,11 @@ pub enum AppMsg {
     QuitApp,
     Fehler(String),
     SetLanguage(String),
+    ToggleAutostart(bool),
 }
 
 pub struct AppModel {
+    start_hidden: bool,
     window: gtk4::glib::WeakRef<adw::ApplicationWindow>,
     toast_overlay: adw::ToastOverlay,
     _tray: ksni::Handle<tray::AsusTray>,
@@ -71,7 +73,7 @@ pub struct AppModel {
 
 #[relm4::component(pub)]
 impl SimpleComponent for AppModel {
-    type Init = ();
+    type Init = bool;
     type Input = AppMsg;
     type Output = ();
 
@@ -79,6 +81,7 @@ impl SimpleComponent for AppModel {
         adw::ApplicationWindow {
             set_title: Some(&t!("app_title")),
             set_default_size: (1200, 800),
+            set_visible: !model.start_hidden,
 
             #[wrap(Some)]
             set_content = &model.toast_overlay.clone() -> adw::ToastOverlay {
@@ -118,11 +121,14 @@ impl SimpleComponent for AppModel {
                 toast.set_timeout(5);
                 self.toast_overlay.add_toast(toast);
             }
+            AppMsg::ToggleAutostart(state) => {
+                crate::autostart::set_enabled(state);
+            }
         }
     }
 
     fn init(
-        _init: Self::Init,
+        init: Self::Init,
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
@@ -176,6 +182,7 @@ impl SimpleComponent for AppModel {
         let toast_overlay = adw::ToastOverlay::new();
 
         let model = AppModel {
+            start_hidden: init,
             window: root.downgrade(),
             toast_overlay,
             _tray: tray_handle,
@@ -264,6 +271,15 @@ impl SimpleComponent for AppModel {
         lang_row.add_suffix(&lang_dropdown);
         lang_row.set_activatable_widget(Some(&lang_dropdown));
         lang_group.add(&lang_row);
+
+        let autostart_row = adw::SwitchRow::new();
+        autostart_row.set_title(&t!("autostart_title"));
+        autostart_row.set_active(crate::autostart::is_enabled());
+        let sender_at = sender.clone();
+        autostart_row.connect_active_notify(move |row| {
+            sender_at.input(AppMsg::ToggleAutostart(row.is_active()));
+        });
+        lang_group.add(&autostart_row);
 
         system_page.add(&lang_group);
 
