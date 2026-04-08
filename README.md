@@ -102,6 +102,7 @@ The application is smart about availability: if a required tool or desktop envir
 
 - **Global search** — search across all settings with a keyboard shortcut
 - **System tray** — minimize to tray, restore or quit from tray menu
+- **Autostart** — optional autostart with the system; when enabled, the app launches hidden (`--hidden`) and only appears in the tray. Managed via a `.desktop` file at `~/.config/autostart/de.guido.asus-hub.desktop`
 - **Persistent configuration** — settings are saved to `~/.config/asus-hub/config.json` and restored on every launch
 - **Multilingual UI** — English and German supported, switchable at runtime
 - **Toast notifications** — errors and status messages shown as non-blocking toasts
@@ -193,6 +194,23 @@ Download the package matching your distribution from the [GitHub Releases](https
   sudo apt install ./asus-hub_1.0.0-1_amd64.deb
   ```
 
+### Uninstall
+
+- **Fedora, CentOS oder RHEL (via RPM/DNF):**
+  ```bash
+  sudo dnf remove asus-hub
+  ```
+
+- **Ubuntu, Debian oder Linux Mint (via DEB/APT):**
+  ```bash
+  sudo apt remove asus-hub
+  ```
+
+- **openSUSE (via RPM/Zypper):**
+  ```bash
+  sudo zypper remove asus-hub
+  ```
+
 ### Build from source
 
 ```bash
@@ -211,6 +229,7 @@ asus-hub/
 ├── src/
 │   ├── main.rs               # Entry point: CSS, i18n, tray, app init
 │   ├── app.rs                # Main window, tab navigation, search integration
+│   ├── autostart.rs          # Autostart toggle — writes/removes ~/.config/autostart/de.guido.asus-hub.desktop
 │   ├── tray.rs               # System tray (freedesktop.org SNI protocol)
 │   ├── search.rs             # Global search index and result routing
 │   ├── components/
