@@ -146,7 +146,7 @@ Other Linux distributions should work as long as the relevant dependencies can b
 
 ## Installation
 
-### Prerequisites
+### 1. Prerequisites
 
 - Rust toolchain (install via [rustup](https://rustup.rs))
 - GTK4 and Libadwaita development libraries
@@ -161,7 +161,7 @@ sudo dnf install gtk4-devel libadwaita-devel
 sudo pacman -S gtk4 libadwaita
 ```
 
-### Install external tools
+### 2. Install external tools
 
 Most tools are already included with a standard Fedora KDE installation (`kscreen-doctor`, `kwriteconfig6`, `wpctl`). The following need to be installed manually:
 
@@ -173,14 +173,15 @@ sudo dnf install asusctl supergfxctl
 sudo dnf update --refresh
 sudo systemctl enable supergfxd.service
 ```
-Reboot after installation.
 
-**Remaining tools:**
+### 3. Reboot after installation
+
+### 4. Remaining tools:
 ```bash
 sudo dnf install easyeffects iio-sensor-proxy swayidle
 ```
 
-### Download & Install
+### 5. Download & Install
 
 Download the package matching your distribution from the [GitHub Releases](https://github.com/Traciges/asus-hub/releases) page:
 
