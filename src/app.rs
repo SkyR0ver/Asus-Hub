@@ -28,6 +28,7 @@ use crate::components::keyboard::BacklightIdleModel;
 use crate::components::keyboard::FnKeyModel;
 use crate::components::keyboard::GesturesModel;
 use crate::components::keyboard::TouchpadModel;
+use crate::components::system::apu_mem::ApuMemModel;
 use crate::components::system::battery::BatteryModel;
 use crate::components::system::fan::FanModel;
 use crate::components::system::gpu::GpuModel;
@@ -53,6 +54,7 @@ pub struct AppModel {
     window: gtk4::glib::WeakRef<adw::ApplicationWindow>,
     toast_overlay: adw::ToastOverlay,
     _tray: ksni::Handle<tray::AsusTray>,
+    apu_mem: Controller<ApuMemModel>,
     battery: Controller<BatteryModel>,
     fan: Controller<FanModel>,
     gpu: Controller<GpuModel>,
@@ -131,6 +133,9 @@ impl SimpleComponent for AppModel {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let error_handler = |msg: String| AppMsg::Error(msg);
+        let apu_mem = ApuMemModel::builder()
+            .launch(())
+            .forward(sender.input_sender(), error_handler);
         let battery = BatteryModel::builder()
             .launch(())
             .forward(sender.input_sender(), error_handler);
@@ -187,6 +192,7 @@ impl SimpleComponent for AppModel {
             window: root.downgrade(),
             toast_overlay,
             _tray: tray_handle,
+            apu_mem,
             battery,
             fan,
             gpu,
@@ -203,6 +209,7 @@ impl SimpleComponent for AppModel {
             volume_widget,
         };
 
+        let apu_mem_widget = model.apu_mem.widget();
         let battery_widget = model.battery.widget();
         let fan_widget = model.fan.widget();
         let gpu_widget = model.gpu.widget();
@@ -251,6 +258,7 @@ impl SimpleComponent for AppModel {
         system_page.add(battery_widget);
         system_page.add(fan_widget);
         system_page.add(gpu_widget);
+        system_page.add(apu_mem_widget);
 
         let lang_group = adw::PreferencesGroup::new();
         lang_group.set_title(&t!("app_settings_title"));
@@ -330,6 +338,7 @@ impl SimpleComponent for AppModel {
                 "sound_modes",
                 sound_modes_widget.clone().upcast::<gtk4::Widget>(),
             ),
+            ("apu_mem", apu_mem_widget.clone().upcast::<gtk4::Widget>()),
             ("battery", battery_widget.clone().upcast::<gtk4::Widget>()),
             ("fan", fan_widget.clone().upcast::<gtk4::Widget>()),
             ("gpu", gpu_widget.clone().upcast::<gtk4::Widget>()),

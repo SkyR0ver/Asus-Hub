@@ -94,6 +94,9 @@ pub struct AppConfig {
     /// Last GPU mode set by the user, stored as the `GfxMode` repr value (default `0` = Hybrid).
     #[serde(default)]
     pub gpu_mode: u32,
+    /// Last APU memory (UMA frame buffer) size set by the user (default `0` = Auto).
+    #[serde(default)]
+    pub apu_mem: i32,
 }
 
 impl Default for AppConfig {
@@ -120,6 +123,7 @@ impl Default for AppConfig {
             oled_dc_dimming: default_dc_dimming(),
             target_mode_active: false,
             gpu_mode: 0,
+            apu_mem: 0,
         }
     }
 }

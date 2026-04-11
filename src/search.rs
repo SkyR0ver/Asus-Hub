@@ -224,6 +224,20 @@ static SEARCH_INDEX: &[SearchItem] = &[
         page_name: "system",
         component_key: "gpu",
     },
+    SearchItem {
+        title_key: "apu_mem_group_title",
+        page_icon: "preferences-system-symbolic",
+        page_title_key: "tab_system",
+        page_name: "system",
+        component_key: "apu_mem",
+    },
+    SearchItem {
+        title_key: "apu_mem_title",
+        page_icon: "preferences-system-symbolic",
+        page_title_key: "tab_system",
+        page_name: "system",
+        component_key: "apu_mem",
+    },
 ];
 
 pub struct SearchWidgets {

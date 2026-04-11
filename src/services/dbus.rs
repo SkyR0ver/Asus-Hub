@@ -264,3 +264,63 @@ pub async fn set_gpu_mode(mode: GfxMode) -> Result<GfxMode, String> {
         .map(|_| mode)
         .map_err(|e| t!("error_gpu_mode_write", error = e.to_string()).to_string())
 }
+
+#[zbus::proxy(
+    interface = "xyz.ljones.AsusArmoury",
+    default_service = "xyz.ljones.Asusd",
+    default_path = "/xyz/ljones/asus_armoury/apu_mem"
+)]
+trait AsusArmoury {
+    #[zbus(property)]
+    fn current_value(&self) -> zbus::Result<i32>;
+    #[zbus(property)]
+    fn set_current_value(&self, value: i32) -> zbus::Result<()>;
+    #[zbus(property)]
+    fn possible_values(&self) -> zbus::Result<Vec<i32>>;
+}
+
+/// Lazily-initialized singleton proxy to the `apu_mem` AsusArmoury D-Bus object.
+static ASUS_ARMOURY_APU_MEM_PROXY: tokio::sync::OnceCell<AsusArmouryProxy<'static>> =
+    tokio::sync::OnceCell::const_new();
+
+/// Returns a reference to the shared [`AsusArmouryProxy`] for `apu_mem`, initialising it on first call.
+async fn asus_armoury_apu_mem_proxy() -> Result<&'static AsusArmouryProxy<'static>, String> {
+    ASUS_ARMOURY_APU_MEM_PROXY
+        .get_or_try_init(|| async {
+            let conn = system_bus_connection().await?;
+            AsusArmouryProxy::new(&conn)
+                .await
+                .map_err(|e| t!("error_dbus_proxy_create", error = e.to_string()).to_string())
+        })
+        .await
+}
+
+/// Reads the current APU memory (UMA frame buffer) size from `asusd`.
+pub async fn get_apu_mem() -> Result<i32, String> {
+    let proxy = asus_armoury_apu_mem_proxy().await?;
+    proxy
+        .current_value()
+        .await
+        .map_err(|e| t!("error_apu_mem_read", error = e.to_string()).to_string())
+}
+
+/// Sets the APU memory (UMA frame buffer) size via `asusd` and returns the applied value.
+pub async fn set_apu_mem(value: i32) -> Result<i32, String> {
+    let proxy = asus_armoury_apu_mem_proxy().await?;
+    proxy
+        .set_current_value(value)
+        .await
+        .map_err(|e| t!("error_apu_mem_write", error = e.to_string()).to_string())?;
+    Ok(value)
+}
+
+/// Returns the list of allowed APU memory values from `asusd` (e.g. `[0, 1, 2, 4, 8]`).
+///
+/// Returns an error if asusd is unreachable or if the laptop's BIOS does not expose this attribute.
+pub async fn get_apu_mem_options() -> Result<Vec<i32>, String> {
+    let proxy = asus_armoury_apu_mem_proxy().await?;
+    proxy
+        .possible_values()
+        .await
+        .map_err(|e| t!("error_apu_mem_read", error = e.to_string()).to_string())
+}
