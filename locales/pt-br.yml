@@ -189,6 +189,8 @@ fan_quiet_title: "Silencioso"
 fan_quiet_subtitle: "Operação mais silenciosa com menor consumo."
 fan_profile_set: "Perfil selecionado: %{profile}"
 asusd_missing_warning: "Serviço asusctl não disponível."
+tray_show: "Mostrar"
+tray_exit: "Sair"
 
 # gpu
 gpu_group_title: "Modo de GPU"
