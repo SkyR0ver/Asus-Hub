@@ -44,6 +44,8 @@ modules:
       - install -Dm644 packaging/io.github.traciges.asus-hub.metainfo.xml -t /app/share/metainfo/
       - install -Dm644 assets/io.github.traciges.asus-hub.png /app/share/icons/hicolor/512x512/apps/io.github.traciges.asus-hub.png
     sources:
-      - type: dir
-        path: ..
+      - type: archive
+        url: https://github.com/Traciges/Asus-Hub/archive/refs/tags/v1.0.5.tar.gz
+        sha256: 314e9dc83caaf8658cb8e7d49cbf6ea9a65a92f3c819fd6bff7622ac1bb3a7db
+        strip-components: 1
       - cargo-sources.json
