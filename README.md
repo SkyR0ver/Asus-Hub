@@ -106,7 +106,7 @@ The application is smart about availability: if a required tool or desktop envir
 - **Global search** - search across all settings with a keyboard shortcut
 - **System tray** - minimize to tray, restore or quit from tray menu
 - **Autostart** - optional autostart with the system; when enabled, the app launches hidden (`--hidden`) and only appears in the tray. Managed via a `.desktop` file at `~/.config/autostart/de.guido.asus-hub.desktop`
-- **Persistent configuration** - settings are saved to `~/.config/asus-hub/config.json` and restored on every launch
+- **Persistent configuration** - settings are saved to `~/.config/asus-hub/config.json` (native) or `~/.var/app/de.guido.asus-hub/config/asus-hub/config.json` (Flatpak) and restored on every launch
 - **Multilingual UI** - English and German supported, switchable at runtime
 - **Toast notifications** - errors and status messages shown as non-blocking toasts
 
@@ -248,6 +248,23 @@ Download the package matching your distribution from the [GitHub Releases](https
   ```bash
   sudo zypper remove asus-hub
   ```
+
+### Flatpak
+
+Requires `flatpak-builder` and the GNOME SDK:
+
+```bash
+flatpak install flathub org.gnome.Sdk//50 org.gnome.Platform//50 org.freedesktop.Sdk.Extension.rust-stable//24.08
+```
+
+Build and install locally:
+
+```bash
+flatpak-builder --user --install target/flatpak packaging/de.guido.asus-hub.yml
+flatpak run de.guido.asus-hub
+```
+
+Config is stored at `~/.var/app/de.guido.asus-hub/config/asus-hub/config.json`.
 
 ### Build from source
 

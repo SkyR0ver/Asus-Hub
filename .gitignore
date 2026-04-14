@@ -27,3 +27,5 @@ context/
 
 # Flatpak
 .flatpak-builder/
+docs/
+flatpak-cargo-generator.py

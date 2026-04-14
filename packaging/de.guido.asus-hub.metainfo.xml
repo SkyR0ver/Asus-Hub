@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <component type="desktop-application">
   <id>de.guido.asus-hub</id>
   <name>Asus Hub</name>
@@ -6,19 +6,23 @@
 
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <developer_name>Guido</developer_name>
+  <developer id="Traciges">
+    <name>Guido Philipp</name>
+  </developer>
 
   <description>
-    <p>
-      **This is a community package of Asus Hub and not officially supported by ASUS.**
-    </p>
     <p>
       Asus Hub is a lightweight, native Linux control center for Asus laptops (like Zenbook, Vivobook, and ROG).
       It allows you to tweak deep hardware settings that are usually only available on Windows.
     </p>
+    <p>
+      This is a community package and is not officially supported by ASUS.
+    </p>
     <ul>
-      <li>Battery Care: Set charging limits to 80% to prolong battery lifespan.</li>
-      <li>Fan Profiles: Switch between Whisper, Balanced, and Performance modes.</li>
+      <li
+      >Battery Care: Set charging limits to 80% to prolong battery lifespan.</li>
+      <li
+      >Fan Profiles: Switch between Whisper, Balanced, and Performance modes.</li>
       <li>OLED Care: Manage pixel refresh and panel dimming.</li>
       <li>Keyboard Backlight: Configure sleep timeouts and auto-brightness.</li>
     </ul>
@@ -26,23 +30,28 @@
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/System.png</image>
+      <image
+      >https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/System.png</image>
       <caption>The system overview and battery settings</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Display.png</image>
+      <image
+      >https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Display.png</image>
       <caption>Display and OLED care settings</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Keyboard.png</image>
+      <image
+      >https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Keyboard.png</image>
       <caption>Keyboard backlight and gestures configuration</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Audio.png</image>
+      <image
+      >https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Audio.png</image>
       <caption>Audio and volume mode control</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Touchpad.png</image>
+      <image
+      >https://raw.githubusercontent.com/Traciges/Asus-Hub/refs/heads/main/screenshots/Touchpad.png</image>
       <caption>Touchpad and gesture settings</caption>
     </screenshot>
   </screenshots>
