@@ -56,31 +56,34 @@ impl Component for HomeModel {
     type CommandOutput = HomeCommandOutput;
 
     view! {
-        adw::PreferencesPage {
-            // Banner: icon on the left, name + specs on the right
-            add = &adw::PreferencesGroup {
-                add = &gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 32,
-                    set_margin_top: 0,
-                    set_margin_bottom: 32,
-                    set_halign: gtk::Align::Center,
+        gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
+            set_spacing: 24,
+            set_margin_top: 24,
+            set_margin_bottom: 32,
+            set_margin_start: 32,
+            set_margin_end: 32,
 
-                    append = &gtk::Image {
-                        set_icon_name: Some("computer-symbolic"),
-                        set_pixel_size: 192,
-                        set_valign: gtk::Align::Center,
-                    },
+            append = &adw::PreferencesGroup {
+                add = &gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_spacing: 24,
+
+                    append = &model.product_name_label.clone(),
 
                     append = &gtk::Box {
-                        set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: 16,
-                        set_valign: gtk::Align::Center,
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_spacing: 32,
 
-                        append = &model.product_name_label.clone(),
+                        append = &gtk::Image {
+                            set_icon_name: Some("computer-symbolic"),
+                            set_pixel_size: 192,
+                            set_valign: gtk::Align::Center,
+                        },
 
                         append = &adw::PreferencesGroup {
-                            set_width_request: 450,
+                            set_valign: gtk::Align::Center,
+                            set_hexpand: true,
 
                             add = &model.board_row.clone(),
                             add = &model.bios_row.clone(),
@@ -92,7 +95,7 @@ impl Component for HomeModel {
             },
 
             // Profiles placeholder
-            add = &adw::PreferencesGroup {
+            append = &adw::PreferencesGroup {
                 set_title: &t!("home_profiles_title"),
 
                 add = &gtk::Label {
@@ -203,8 +206,7 @@ impl Component for HomeModel {
                 sender.command(move |out, shutdown| {
                     shutdown
                         .register(async move {
-                            let result =
-                                pkexec_read("cat /sys/class/dmi/id/product_serial").await;
+                            let result = pkexec_read("cat /sys/class/dmi/id/product_serial").await;
                             out.emit(HomeCommandOutput::SerialRevealed(result));
                         })
                         .drop_on_shutdown()

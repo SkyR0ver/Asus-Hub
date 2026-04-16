@@ -82,7 +82,7 @@ impl SimpleComponent for AppModel {
     view! {
         adw::ApplicationWindow {
             set_title: Some(&t!("app_title")),
-            set_default_size: (1200, 800),
+            set_default_size: (1300, 800),
             set_visible: !model.start_hidden,
 
             #[wrap(Some)]
@@ -317,10 +317,7 @@ impl SimpleComponent for AppModel {
         // Widget map for scroll-to-widget
 
         let widget_map = std::collections::HashMap::from([
-            (
-                "home_info",
-                home_widget.clone().upcast::<gtk4::Widget>(),
-            ),
+            ("home_info", home_widget.clone().upcast::<gtk4::Widget>()),
             (
                 "oled_dimming",
                 oled_dimming_widget.clone().upcast::<gtk4::Widget>(),
