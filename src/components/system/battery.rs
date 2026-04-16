@@ -20,7 +20,7 @@ use relm4::adw::prelude::*;
 use relm4::prelude::*;
 use rust_i18n::t;
 
-use crate::services::commands::{pkexec_shell, read_file_host};
+use crate::services::commands::pkexec_shell;
 use crate::services::config::AppConfig;
 use crate::services::dbus;
 
@@ -183,7 +183,7 @@ impl Component for BatteryModel {
         sender.command(|out, shutdown| {
             shutdown
                 .register(async move {
-                    match read_file_host("/sys/power/mem_sleep").await {
+                    match tokio::fs::read_to_string("/sys/power/mem_sleep").await {
                         Ok(content) => {
                             let active = content.contains("[deep]");
                             let supported = content.contains("deep");
@@ -247,16 +247,17 @@ impl Component for BatteryModel {
                 AppConfig::update(|c| c.battery_deep_sleep_active = active);
 
                 sender.command(move |out, shutdown| {
-                    shutdown.register(async move {
-                        let value = if active { "deep" } else { "s2idle" };
-                        let cmd = format!("echo {value} > /sys/power/mem_sleep");
+                    shutdown
+                        .register(async move {
+                            let value = if active { "deep" } else { "s2idle" };
+                            let cmd = format!("echo {value} > /sys/power/mem_sleep");
 
-                        match pkexec_shell(&cmd).await {
-                            Ok(()) => out.emit(BatteryCommandOutput::DeepSleepSet(active)),
-                                      Err(e) => out.emit(BatteryCommandOutput::Error(e)),
-                        }
-                    })
-                    .drop_on_shutdown()
+                            match pkexec_shell(&cmd).await {
+                                Ok(()) => out.emit(BatteryCommandOutput::DeepSleepSet(active)),
+                                Err(e) => out.emit(BatteryCommandOutput::Error(e)),
+                            }
+                        })
+                        .drop_on_shutdown()
                 });
             }
             BatteryMsg::ToggleFullCharge(active) => {
@@ -325,7 +326,11 @@ impl Component for BatteryModel {
                 }
             }
             BatteryCommandOutput::DeepSleepSet(active) => {
-                let value = if active && self.deep_sleep_supported { "deep" } else { "s2idle" };
+                let value = if active && self.deep_sleep_supported {
+                    "deep"
+                } else {
+                    "s2idle"
+                };
                 tracing::info!("{}", t!("battery_deep_sleep_set", value = value));
             }
             BatteryCommandOutput::ChargeLimitSet(val) => {

@@ -151,7 +151,10 @@ impl Component for TargetModeModel {
                 AppConfig::update(|c| c.target_mode_active = active);
             }
             TargetModeCommandOutput::ActiveSet(active) => {
-                tracing::info!("{}", t!("target_mode_active_set", value = active.to_string()));
+                tracing::info!(
+                    "{}",
+                    t!("target_mode_active_set", value = active.to_string())
+                );
             }
             TargetModeCommandOutput::Error(e) => {
                 let _ = sender.output(e);
@@ -189,22 +192,19 @@ async fn set_kwin_effect(active: bool) -> Result<(), String> {
 }
 
 fn read_kwin_bool(group: &str, key: &str) -> Option<bool> {
-    let kwin_args = [
-        "--file", "kwinrc", "--group", group, "--key", key, "--default", "false",
-    ];
-    let output = if crate::services::commands::is_flatpak() {
-        let mut args = vec!["--host", "kreadconfig6"];
-        args.extend_from_slice(&kwin_args);
-        std::process::Command::new("flatpak-spawn")
-            .args(&args)
-            .output()
-            .ok()?
-    } else {
-        std::process::Command::new("kreadconfig6")
-            .args(&kwin_args)
-            .output()
-            .ok()?
-    };
+    let output = std::process::Command::new("kreadconfig6")
+        .args([
+            "--file",
+            "kwinrc",
+            "--group",
+            group,
+            "--key",
+            key,
+            "--default",
+            "false",
+        ])
+        .output()
+        .ok()?;
     let s = String::from_utf8_lossy(&output.stdout)
         .trim()
         .to_lowercase();

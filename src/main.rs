@@ -36,16 +36,12 @@ fn load_css() {
             &provider,
             gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
-
         let settings = gtk4::Settings::for_display(&display);
         settings.set_gtk_icon_theme_name(Some("Adwaita"));
     }
 }
 
 fn main() {
-    gtk4::gio::resources_register_include!("compiled.gresource")
-        .expect("Failed to register resources");
-
     tracing_subscriber::fmt::init();
     let config = services::config::AppConfig::load();
     rust_i18n::set_locale(&config.language);
@@ -58,8 +54,8 @@ fn main() {
     let start_hidden = args.iter().any(|arg| arg == "--hidden");
     let gtk_args: Vec<String> = args.into_iter().filter(|arg| arg != "--hidden").collect();
 
-    gtk4::glib::set_prgname(Some("io.github.traciges.asus-hub"));
-    let a = relm4::RelmApp::new("io.github.traciges.asus-hub").with_args(gtk_args);
+    gtk4::glib::set_prgname(Some("de.guido.asus-hub"));
+    let a = relm4::RelmApp::new("de.guido.asus-hub").with_args(gtk_args);
     load_css();
     relm4::adw::StyleManager::default().set_color_scheme(relm4::adw::ColorScheme::PreferDark);
     a.run::<app::AppModel>(start_hidden);

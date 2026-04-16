@@ -4,7 +4,6 @@ context/
 # Rust / Cargo
 /target
 /libs
-/build-dir
 **/*.rs.bk
 
 # Editor: VS Code
@@ -24,8 +23,3 @@ context/
 
 # OS: Linux
 .Trash-*
-
-# Flatpak
-.flatpak-builder/
-docs/
-flatpak-cargo-generator.py

@@ -445,10 +445,13 @@ impl SimpleComponent for AppModel {
             let github_btn = gtk4::Button::new();
             github_btn.add_css_class("flat");
             github_btn.set_tooltip_text(Some("GitHub"));
-            let gh_icon = gtk4::Image::from_resource("/de/guido/asus_hub/github.svg");
-            gh_icon.set_pixel_size(16);
-            github_btn.set_child(Some(&gh_icon));
-            github_btn.set_valign(gtk4::Align::Center);
+            let svg_bytes = include_bytes!("../assets/img/github.svg");
+            let glib_bytes = gtk4::glib::Bytes::from_static(svg_bytes);
+            if let Ok(texture) = gtk4::gdk::Texture::from_bytes(&glib_bytes) {
+                let gh_icon = gtk4::Image::from_paintable(Some(&texture));
+                gh_icon.set_pixel_size(16);
+                github_btn.set_child(Some(&gh_icon));
+            }
             github_btn.connect_clicked(|_| {
                 let _ = Command::new("xdg-open")
                     .arg("https://github.com/Traciges")

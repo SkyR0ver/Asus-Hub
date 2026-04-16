@@ -20,7 +20,6 @@ use relm4::adw::prelude::*;
 use relm4::prelude::*;
 use rust_i18n::t;
 
-use crate::services::commands::is_flatpak;
 use crate::services::config::AppConfig;
 
 /// Controls when the keyboard backlight idle-timeout is active.
@@ -254,7 +253,9 @@ impl BacklightIdleModel {
         }
 
         let seconds = match mode {
-            TimeoutMode::Never => unreachable!("TimeoutMode::Never is handled by the early return above"),
+            TimeoutMode::Never => {
+                unreachable!("TimeoutMode::Never is handled by the early return above")
+            }
             TimeoutMode::BatteryAndAc => {
                 let idx = self.dropdown_battery_and_ac.selected() as usize;
                 *TIMEOUT_SECONDS.get(idx).unwrap_or(&60)
@@ -270,39 +271,18 @@ impl BacklightIdleModel {
         let resume_cmd = busctl_brightness_cmd(3, battery_only);
         let seconds_str = seconds.to_string();
 
-        let (swayidle_program, swayidle_args): (String, Vec<String>) = if is_flatpak() {
-            (
-                "flatpak-spawn".to_string(),
-                vec![
-                    "--host".to_string(),
-                    "swayidle".to_string(),
-                    "-w".to_string(),
-                    "timeout".to_string(),
-                    seconds_str,
-                    timeout_cmd,
-                    "resume".to_string(),
-                    resume_cmd,
-                ],
-            )
-        } else {
-            (
-                "swayidle".to_string(),
-                vec![
-                    "-w".to_string(),
-                    "timeout".to_string(),
-                    seconds_str,
-                    timeout_cmd,
-                    "resume".to_string(),
-                    resume_cmd,
-                ],
-            )
-        };
-
         let cmd_sender = sender.command_sender().clone();
         let handle = tokio::spawn(async move {
-            let mut child = match tokio::process::Command::new(&swayidle_program)
+            let mut child = match tokio::process::Command::new("swayidle")
                 .kill_on_drop(true)
-                .args(&swayidle_args)
+                .args([
+                    "-w",
+                    "timeout",
+                    &seconds_str,
+                    &timeout_cmd,
+                    "resume",
+                    &resume_cmd,
+                ])
                 .spawn()
             {
                 Ok(c) => c,

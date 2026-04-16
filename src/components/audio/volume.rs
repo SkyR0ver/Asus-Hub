@@ -20,8 +20,6 @@ use relm4::adw::prelude::*;
 use relm4::prelude::*;
 use rust_i18n::t;
 
-use crate::services::commands::is_flatpak;
-
 pub struct VolumeModel {
     volume: f64,
 }
@@ -75,17 +73,10 @@ impl SimpleComponent for VolumeModel {
     ) -> ComponentParts<Self> {
         let sender_clone = sender.clone();
         tokio::spawn(async move {
-            let output = if is_flatpak() {
-                tokio::process::Command::new("flatpak-spawn")
-                    .args(["--host", "wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"])
-                    .output()
-                    .await
-            } else {
-                tokio::process::Command::new("wpctl")
-                    .args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
-                    .output()
-                    .await
-            };
+            let output = tokio::process::Command::new("wpctl")
+                .args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
+                .output()
+                .await;
             if let Ok(out) = output {
                 let text = String::from_utf8_lossy(&out.stdout);
                 // Format: "Volume: 0.45"
@@ -111,16 +102,13 @@ impl SimpleComponent for VolumeModel {
             }
             VolumeMsg::SetVolume(vol) => {
                 self.volume = vol;
-                let vol_str = format!("{}%", vol as i32);
-                if is_flatpak() {
-                    let _ = tokio::process::Command::new("flatpak-spawn")
-                        .args(["--host", "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", &vol_str])
-                        .spawn();
-                } else {
-                    let _ = tokio::process::Command::new("wpctl")
-                        .args(["set-volume", "@DEFAULT_AUDIO_SINK@", &vol_str])
-                        .spawn();
-                }
+                let _ = tokio::process::Command::new("wpctl")
+                    .args([
+                        "set-volume",
+                        "@DEFAULT_AUDIO_SINK@",
+                        &format!("{}%", vol as i32),
+                    ])
+                    .spawn();
             }
         }
     }
