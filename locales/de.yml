@@ -18,6 +18,8 @@ home_kernel_title: "Kernel"
 home_serial_title: "Seriennummer"
 home_serial_hidden: "[ Versteckt ]"
 home_serial_reveal: "Anzeigen"
+home_profiles_title: "Profile"
+home_profiles_placeholder: "Profilauswahl folgt hier."
 error_prefix: "Fehler:"
 lang_restart_toast: "Sprache geändert. Bitte starte die App neu, um die Änderungen zu übernehmen."
 

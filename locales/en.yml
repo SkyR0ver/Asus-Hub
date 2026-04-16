@@ -18,6 +18,8 @@ home_kernel_title: "Kernel"
 home_serial_title: "Serial Number"
 home_serial_hidden: "[ Hidden ]"
 home_serial_reveal: "Reveal"
+home_profiles_title: "Profiles"
+home_profiles_placeholder: "Profile selection will go here."
 error_prefix: "Error:"
 lang_restart_toast: "Language changed. Please restart the app to apply changes."
 

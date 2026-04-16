@@ -23,7 +23,7 @@ use rust_i18n::t;
 use crate::services::commands::pkexec_read;
 
 pub struct HomeModel {
-    status_page: adw::StatusPage,
+    product_name_label: gtk::Label,
     board_row: adw::ActionRow,
     bios_row: adw::ActionRow,
     kernel_row: adw::ActionRow,
@@ -56,25 +56,49 @@ impl Component for HomeModel {
     type CommandOutput = HomeCommandOutput;
 
     view! {
-        gtk::Box {
-            set_orientation: gtk::Orientation::Vertical,
-            set_vexpand: true,
+        adw::PreferencesPage {
+            // Banner: icon on the left, name + specs on the right
+            add = &adw::PreferencesGroup {
+                add = &gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: 32,
+                    set_margin_top: 0,
+                    set_margin_bottom: 32,
+                    set_halign: gtk::Align::Center,
 
-            append = &model.status_page.clone(),
+                    append = &gtk::Image {
+                        set_icon_name: Some("computer-symbolic"),
+                        set_pixel_size: 192,
+                        set_valign: gtk::Align::Center,
+                    },
 
-            append = &gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_margin_start: 12,
-                set_margin_end: 12,
-                set_margin_bottom: 24,
+                    append = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 16,
+                        set_valign: gtk::Align::Center,
 
-                append = &adw::PreferencesGroup {
-                    set_title: &t!("home_info_group_title"),
+                        append = &model.product_name_label.clone(),
 
-                    add = &model.board_row.clone(),
-                    add = &model.bios_row.clone(),
-                    add = &model.kernel_row.clone(),
-                    add = &model.serial_row.clone(),
+                        append = &adw::PreferencesGroup {
+                            set_width_request: 450,
+
+                            add = &model.board_row.clone(),
+                            add = &model.bios_row.clone(),
+                            add = &model.kernel_row.clone(),
+                            add = &model.serial_row.clone(),
+                        },
+                    },
+                },
+            },
+
+            // Profiles placeholder
+            add = &adw::PreferencesGroup {
+                set_title: &t!("home_profiles_title"),
+
+                add = &gtk::Label {
+                    set_label: &t!("home_profiles_placeholder"),
+                    set_margin_top: 12,
+                    set_margin_bottom: 12,
                 },
             },
         }
@@ -85,9 +109,9 @@ impl Component for HomeModel {
         _root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let status_page = adw::StatusPage::new();
-        status_page.set_icon_name(Some("computer-symbolic"));
-        status_page.set_title(&t!("home_loading"));
+        let product_name_label = gtk::Label::new(Some(&t!("home_loading")));
+        product_name_label.add_css_class("title-1");
+        product_name_label.set_halign(gtk::Align::Start);
 
         let board_row = adw::ActionRow::new();
         board_row.set_title(&t!("home_board_title"));
@@ -118,7 +142,7 @@ impl Component for HomeModel {
         serial_row.add_suffix(&reveal_button);
 
         let model = HomeModel {
-            status_page,
+            product_name_label,
             board_row,
             bios_row,
             kernel_row,
@@ -203,7 +227,7 @@ impl Component for HomeModel {
                 bios_date,
                 kernel,
             } => {
-                self.status_page.set_title(&product_name);
+                self.product_name_label.set_label(&product_name);
                 self.board_row.set_subtitle(&board_name);
                 self.bios_row
                     .set_subtitle(&format!("{bios_version} / {bios_date}"));
