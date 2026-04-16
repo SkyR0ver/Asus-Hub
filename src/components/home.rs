@@ -29,11 +29,16 @@ pub struct HomeModel {
     kernel_row: adw::ActionRow,
     serial_row: adw::ActionRow,
     reveal_button: gtk::Button,
+    battery_text: String,
+    cpu_text: String,
+    ram_text: String,
+    disk_text: String,
 }
 
 #[derive(Debug)]
 pub enum HomeMsg {
     RevealSerial,
+    RefreshMetrics,
 }
 
 #[derive(Debug)]
@@ -46,6 +51,12 @@ pub enum HomeCommandOutput {
         kernel: String,
     },
     SerialRevealed(Result<String, String>),
+    MetricsRefreshed {
+        battery: String,
+        cpu: String,
+        ram: String,
+        disk: String,
+    },
 }
 
 #[relm4::component(pub)]
@@ -89,6 +100,157 @@ impl Component for HomeModel {
                             add = &model.bios_row.clone(),
                             add = &model.kernel_row.clone(),
                             add = &model.serial_row.clone(),
+                        },
+                    },
+                },
+            },
+
+            // System metrics dashboard
+            append = &gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 16,
+                set_homogeneous: true,
+
+                // Battery card
+                append = &gtk::Box {
+                    add_css_class: "card",
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Start,
+
+                    append = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 8,
+                        set_margin_top: 16,
+                        set_margin_bottom: 16,
+                        set_margin_start: 16,
+                        set_margin_end: 16,
+
+                        append = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_spacing: 8,
+
+                            append = &gtk::Image {
+                                set_icon_name: Some("battery-symbolic"),
+                                set_pixel_size: 16,
+                            },
+                            append = &gtk::Label {
+                                set_label: "Battery",
+                            },
+                        },
+                        append = &gtk::Label {
+                            #[watch]
+                            set_label: &model.battery_text,
+                            add_css_class: "title-2",
+                            add_css_class: "dim-label",
+                            set_halign: gtk::Align::Start,
+                        },
+                    },
+                },
+
+                // CPU card
+                append = &gtk::Box {
+                    add_css_class: "card",
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Start,
+
+                    append = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 8,
+                        set_margin_top: 16,
+                        set_margin_bottom: 16,
+                        set_margin_start: 16,
+                        set_margin_end: 16,
+
+                        append = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_spacing: 8,
+
+                            append = &gtk::Image {
+                                set_icon_name: Some("system-run-symbolic"),
+                                set_pixel_size: 16,
+                            },
+                            append = &gtk::Label {
+                                set_label: "CPU",
+                            },
+                        },
+                        append = &gtk::Label {
+                            #[watch]
+                            set_label: &model.cpu_text,
+                            add_css_class: "title-2",
+                            add_css_class: "dim-label",
+                            set_halign: gtk::Align::Start,
+                        },
+                    },
+                },
+
+                // RAM card
+                append = &gtk::Box {
+                    add_css_class: "card",
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Start,
+
+                    append = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 8,
+                        set_margin_top: 16,
+                        set_margin_bottom: 16,
+                        set_margin_start: 16,
+                        set_margin_end: 16,
+
+                        append = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_spacing: 8,
+
+                            append = &gtk::Image {
+                                set_icon_name: Some("media-flash-symbolic"),
+                                set_pixel_size: 16,
+                            },
+                            append = &gtk::Label {
+                                set_label: "Memory",
+                            },
+                        },
+                        append = &gtk::Label {
+                            #[watch]
+                            set_label: &model.ram_text,
+                            add_css_class: "title-2",
+                            add_css_class: "dim-label",
+                            set_halign: gtk::Align::Start,
+                        },
+                    },
+                },
+
+                // Disk card
+                append = &gtk::Box {
+                    add_css_class: "card",
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Start,
+
+                    append = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 8,
+                        set_margin_top: 16,
+                        set_margin_bottom: 16,
+                        set_margin_start: 16,
+                        set_margin_end: 16,
+
+                        append = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_spacing: 8,
+
+                            append = &gtk::Image {
+                                set_icon_name: Some("drive-harddisk-symbolic"),
+                                set_pixel_size: 16,
+                            },
+                            append = &gtk::Label {
+                                set_label: "Disk",
+                            },
+                        },
+                        append = &gtk::Label {
+                            #[watch]
+                            set_label: &model.disk_text,
+                            add_css_class: "title-2",
+                            add_css_class: "dim-label",
+                            set_halign: gtk::Align::Start,
                         },
                     },
                 },
@@ -151,10 +313,15 @@ impl Component for HomeModel {
             kernel_row,
             serial_row,
             reveal_button,
+            battery_text: "…".to_string(),
+            cpu_text: "…".to_string(),
+            ram_text: "…".to_string(),
+            disk_text: "…".to_string(),
         };
 
         let widgets = view_output!();
 
+        // Initial load of device info
         sender.command(move |out, shutdown| {
             shutdown
                 .register(async move {
@@ -196,6 +363,16 @@ impl Component for HomeModel {
                 .drop_on_shutdown()
         });
 
+        // Fetch metrics immediately, then every 5 seconds
+        sender.input(HomeMsg::RefreshMetrics);
+        {
+            let sender = sender.clone();
+            gtk::glib::timeout_add_local(std::time::Duration::from_secs(5), move || {
+                sender.input(HomeMsg::RefreshMetrics);
+                gtk::glib::ControlFlow::Continue
+            });
+        }
+
         ComponentParts { model, widgets }
     }
 
@@ -208,6 +385,101 @@ impl Component for HomeModel {
                         .register(async move {
                             let result = pkexec_read("cat /sys/class/dmi/id/product_serial").await;
                             out.emit(HomeCommandOutput::SerialRevealed(result));
+                        })
+                        .drop_on_shutdown()
+                });
+            }
+            HomeMsg::RefreshMetrics => {
+                sender.command(move |out, shutdown| {
+                    shutdown
+                        .register(async move {
+                            let battery = {
+                                let b0 = tokio::fs::read_to_string(
+                                    "/sys/class/power_supply/BAT0/capacity",
+                                )
+                                .await;
+                                let b1 = tokio::fs::read_to_string(
+                                    "/sys/class/power_supply/BAT1/capacity",
+                                )
+                                .await;
+                                b0.or(b1)
+                                    .map(|s| format!("{}%", s.trim()))
+                                    .unwrap_or_else(|_| "N/A".to_string())
+                            };
+
+                            let cpu = {
+                                let load = tokio::fs::read_to_string("/proc/loadavg")
+                                    .await
+                                    .map(|s| {
+                                        s.split_whitespace()
+                                            .next()
+                                            .unwrap_or("?")
+                                            .to_string()
+                                    })
+                                    .unwrap_or_else(|_| "?".to_string());
+
+                                let temp = tokio::fs::read_to_string(
+                                    "/sys/class/thermal/thermal_zone0/temp",
+                                )
+                                .await
+                                .map(|s| {
+                                    let millideg: i32 = s.trim().parse().unwrap_or(0);
+                                    format!("{}°C", millideg / 1000)
+                                })
+                                .unwrap_or_else(|_| "?°C".to_string());
+
+                                format!("{}% | {}", load, temp)
+                            };
+
+                            let ram = tokio::fs::read_to_string("/proc/meminfo")
+                                .await
+                                .map(|s| {
+                                    let mut total: u64 = 0;
+                                    let mut available: u64 = 0;
+                                    for line in s.lines() {
+                                        if line.starts_with("MemTotal:") {
+                                            total = line
+                                                .split_whitespace()
+                                                .nth(1)
+                                                .and_then(|v| v.parse().ok())
+                                                .unwrap_or(0);
+                                        } else if line.starts_with("MemAvailable:") {
+                                            available = line
+                                                .split_whitespace()
+                                                .nth(1)
+                                                .and_then(|v| v.parse().ok())
+                                                .unwrap_or(0);
+                                        }
+                                    }
+                                    if total > 0 {
+                                        format!("{}%", 100 * (total - available) / total)
+                                    } else {
+                                        "N/A".to_string()
+                                    }
+                                })
+                                .unwrap_or_else(|_| "N/A".to_string());
+
+                            let disk = tokio::process::Command::new("df")
+                                .args(["-h", "/"])
+                                .output()
+                                .await
+                                .map(|o| {
+                                    let stdout = String::from_utf8_lossy(&o.stdout);
+                                    stdout
+                                        .lines()
+                                        .nth(1)
+                                        .and_then(|line| line.split_whitespace().nth(4))
+                                        .map(|s| s.to_string())
+                                        .unwrap_or_else(|| "N/A".to_string())
+                                })
+                                .unwrap_or_else(|_| "N/A".to_string());
+
+                            out.emit(HomeCommandOutput::MetricsRefreshed {
+                                battery,
+                                cpu,
+                                ram,
+                                disk,
+                            });
                         })
                         .drop_on_shutdown()
                 });
@@ -241,6 +513,17 @@ impl Component for HomeModel {
             HomeCommandOutput::SerialRevealed(Err(e)) => {
                 self.reveal_button.set_sensitive(true);
                 let _ = sender.output(e);
+            }
+            HomeCommandOutput::MetricsRefreshed {
+                battery,
+                cpu,
+                ram,
+                disk,
+            } => {
+                self.battery_text = battery;
+                self.cpu_text = cpu;
+                self.ram_text = ram;
+                self.disk_text = disk;
             }
         }
     }
